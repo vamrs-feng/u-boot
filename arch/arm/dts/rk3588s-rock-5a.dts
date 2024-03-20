@@ -176,6 +176,39 @@
 	status = "disabled";
 };
 
+&gmac1 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+	phy-mode = "rgmii";
+	clock_in_out = "output";
+	clocks = <&cru CLK_GMAC_125M>, <&cru ACLK_GMAC1>,
+			<&cru PCLK_GMAC1>, <&cru CLK_GMAC1_PTP_REF>;
+
+	snps,reset-gpio = <&gpio3 RK_PB7 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	snps,reset-delays-us = <0 20000 100000>;
+	phy-handle = <&rgmii_phy1>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac1_miim
+			&gmac1_tx_bus2
+			&gmac1_rx_bus2
+			&gmac1_rgmii_clk
+			&gmac1_rgmii_bus>;
+	tx_delay = <0x3a>;
+	rx_delay = <0x3e>;
+};
+
+&mdio1 {
+	u-boot,dm-pre-reloc;
+        rgmii_phy1: phy@1 {
+		u-boot,dm-pre-reloc;
+		compatible = "ethernet-phy-id001c.c916";
+		reg = <0x1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rtl8211f_rst>;
+        };
+};
+
 &pinctrl {
 
 	/delete-node/ fspi;
@@ -212,6 +245,104 @@
 		vcc_5v0_en: vcc-5v0-en {
 			u-boot,dm-spl;
 			rockchip,pins = <4 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	rtl8211f {
+		rtl8211f_rst: rtl8211f-rst {
+			u-boot,dm-spl;
+			rockchip,pins = <3 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	gmac1 {
+		u-boot,dm-pre-reloc;
+		gmac1_miim: gmac1-miim {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_mdc */
+				<3 RK_PC2 1 &pcfg_pull_none>,
+				/* gmac1_mdio */
+				<3 RK_PC3 1 &pcfg_pull_none>;
+		};
+
+		gmac1_clkinout: gmac1-clkinout {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_mclkinout */
+				<3 RK_PB6 1 &pcfg_pull_none>;
+		};
+
+		gmac1_rx_bus2: gmac1-rx-bus2 {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_rxd0 */
+				<3 RK_PA7 1 &pcfg_pull_none>,
+				/* gmac1_rxd1 */
+				<3 RK_PB0 1 &pcfg_pull_none>,
+				/* gmac1_rxdv_crs */
+				<3 RK_PB1 1 &pcfg_pull_none>;
+		};
+
+		gmac1_tx_bus2: gmac1-tx-bus2 {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_txd0 */
+				<3 RK_PB3 1 &pcfg_pull_none>,
+				/* gmac1_txd1 */
+				<3 RK_PB4 1 &pcfg_pull_none>,
+				/* gmac1_txen */
+				<3 RK_PB5 1 &pcfg_pull_none>;
+		};
+
+		gmac1_rgmii_clk: gmac1-rgmii-clk {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_rxclk */
+				<3 RK_PA5 1 &pcfg_pull_none>,
+				/* gmac1_txclk */
+				<3 RK_PA4 1 &pcfg_pull_none>;
+		};
+
+		gmac1_rgmii_bus: gmac1-rgmii-bus {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_rxd2 */
+				<3 RK_PA2 1 &pcfg_pull_none>,
+				/* gmac1_rxd3 */
+				<3 RK_PA3 1 &pcfg_pull_none>,
+				/* gmac1_txd2 */
+				<3 RK_PA0 1 &pcfg_pull_none>,
+				/* gmac1_txd3 */
+				<3 RK_PA1 1 &pcfg_pull_none>;
+		};
+
+		gmac1_ppsclk: gmac1-ppsclk {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_ppsclk */
+				<3 RK_PC1 1 &pcfg_pull_none>;
+		};
+
+		gmac1_ppstrig: gmac1-ppstrig {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_ppstrig */
+				<3 RK_PC0 1 &pcfg_pull_none>;
+		};
+
+		gmac1_ptp_ref_clk: gmac1-ptp-ref-clk {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_ptp_ref_clk */
+				<3 RK_PB7 1 &pcfg_pull_none>;
+		};
+
+		gmac1_txer: gmac1-txer {
+			u-boot,dm-pre-reloc;
+			rockchip,pins =
+				/* gmac1_txer */
+				<3 RK_PB2 1 &pcfg_pull_none>;
 		};
 	};
 };
