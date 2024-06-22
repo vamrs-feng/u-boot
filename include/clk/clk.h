@@ -16,7 +16,11 @@
  */
 #ifndef __CLK__H
 #define __CLK__H
-#include<clk/clk_plat.h>
+
+#include <dm/device.h>
+
+struct clk;
+struct clk_hw;
 
 void clk_put(struct clk *clk);
 int clk_set_rate(struct clk *clk, unsigned long rate);
@@ -30,6 +34,7 @@ int clk_prepare_enable(struct clk *clk);
 int clk_disable(struct clk *clk);
 int of_periph_clk_config_setup(int node_offset);
 struct clk* of_clk_get(int node_offset, int index);
+struct clk *clk_get_by_name(struct udevice *dev, const char *id);
 long clk_round_rate(struct clk *clk, unsigned long rate);
 
 #endif

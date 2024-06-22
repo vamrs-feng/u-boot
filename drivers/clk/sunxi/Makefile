@@ -1,4 +1,4 @@
-obj-y += clk_factor.o clk_periph.o clk.o clk_fixed_rate.o clk_fixed_factor.o
+obj-y += clk_factor.o clk_periph.o clk.o clk_fixed_rate.o clk_fixed_factor.o clk_divider.o
 obj-$(CONFIG_MACH_SUN3IW1)  += clk-sun3iw1.o
 obj-$(CONFIG_MACH_SUN8IW5) += clk-sun8iw5.o
 obj-$(CONFIG_MACH_SUN8IW6) += clk-sun8iw6.o

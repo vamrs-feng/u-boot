@@ -10,13 +10,22 @@
 #include <pwm.h>
 #include <asm/gpio.h>
 #include <power/regulator.h>
+#ifdef CONFIG_AW_DRM
+#include "drm/sunxi_drm_helper_funcs.h"
+#endif
 
 struct pwm_backlight_priv {
+	u32 regulator;
+	ulong enable_gpio;
+	int sunxi_pwm;
+
 	struct udevice *reg;
 	struct gpio_desc enable;
 	struct udevice *pwm;
+
 	uint channel;
 	uint period_ns;
+	uint polarity;
 	uint default_level;
 	uint min_level;
 	uint max_level;
@@ -25,10 +34,10 @@ struct pwm_backlight_priv {
 static int pwm_backlight_enable(struct udevice *dev)
 {
 	struct pwm_backlight_priv *priv = dev_get_priv(dev);
-	struct dm_regulator_uclass_platdata *plat;
 	uint duty_cycle;
 	int ret;
-
+#ifndef CONFIG_AW_DRM
+	struct dm_regulator_uclass_platdata *plat;
 	if (priv->reg) {
 		plat = dev_get_uclass_platdata(priv->reg);
 		debug("%s: Enable '%s', regulator '%s'/'%s'\n", __func__,
@@ -53,7 +62,27 @@ static int pwm_backlight_enable(struct udevice *dev)
 		return ret;
 	mdelay(10);
 	dm_gpio_set_value(&priv->enable, 1);
+#else
+	if (priv->regulator) {
+		sunxi_drm_power_enable(priv->regulator);
+		mdelay(120);
+	}
+	duty_cycle = priv->period_ns * (priv->default_level - priv->min_level) /
+		(priv->max_level - priv->min_level + 1);
+	ret = pwm_config(priv->sunxi_pwm, duty_cycle, priv->period_ns);
+	if (ret)
+		return ret;
+	ret = pwm_set_polarity(priv->sunxi_pwm, priv->polarity);
+	if (ret)
+		return ret;
 
+	ret = pwm_enable(priv->sunxi_pwm);
+	if (ret)
+		return ret;
+	mdelay(10);
+	sunxi_drm_gpio_set_value(priv->enable_gpio, 1);
+
+#endif
 	return 0;
 }
 
@@ -65,6 +94,31 @@ static int pwm_backlight_ofdata_to_platdata(struct udevice *dev)
 	const u32 *cell;
 
 	debug("%s: start\n", __func__);
+#ifdef CONFIG_AW_DRM
+	ret = dev_read_u32(dev, "power-supply", &priv->regulator);
+	if (ret)
+		debug("%s: Cannot get power supply: ret=%d\n", __func__, ret);
+
+	priv->enable_gpio = sunxi_drm_gpio_request(dev, "enable-gpios");
+
+	ret = dev_read_phandle_with_args(dev, "pwms", "#pwm-cells", -1, 0,
+					 &args);
+	if (ret) {
+		debug("%s: Cannot get PWM phandle: ret=%d\n", __func__, ret);
+		return ret;
+	}
+	priv->channel = args.args[0];
+	priv->period_ns = args.args[1];
+	priv->polarity = args.args[2];
+
+	ret = pwm_request(priv->channel, "pwm_backlight");
+	if (ret < 0) {
+		pr_err("failed to request pwm\n");
+		return ret;
+	} else
+		priv->sunxi_pwm = ret;
+
+#else
 	ret = uclass_get_device_by_phandle(UCLASS_REGULATOR, dev,
 					   "power-supply", &priv->reg);
 	if (ret)
@@ -91,6 +145,7 @@ static int pwm_backlight_ofdata_to_platdata(struct udevice *dev)
 	}
 	priv->channel = args.args[0];
 	priv->period_ns = args.args[1];
+#endif
 
 	index = dev_read_u32_default(dev, "default-brightness-level", 255);
 	cell = dev_read_prop(dev, "brightness-levels", &len);

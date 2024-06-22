@@ -13,6 +13,7 @@
 #include <fdt_support.h>
 #include <linux/compat.h>
 #include <clk/clk.h>
+#include <clk/clk_plat.h>
 
 static int do_sunxi_clk_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {

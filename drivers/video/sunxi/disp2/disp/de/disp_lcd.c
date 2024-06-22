@@ -901,8 +901,11 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 	struct disp_lcd_private_data *lcdp = disp_lcd_get_priv(lcd);
 	disp_panel_para *panel = &lcdp->panel_info;
 	struct lcd_clk_info clk_info;
-	unsigned long pll_rate = 297000000, lcd_rate = 33000000, dclk_rate = 33000000, dsi_rate = 0;//hz
-	unsigned long pll_rate_set = 297000000, lcd_rate_set = 33000000, dclk_rate_set = 33000000, dsi_rate_set = 0;//hz
+#ifndef CONFIG_MACH_SUN55IW3
+	unsigned long pll_rate = 297000000, pll_rate_set = 297000000;
+#endif
+	unsigned long lcd_rate = 33000000, dclk_rate = 33000000, dsi_rate = 0;//hz
+	unsigned long lcd_rate_set = 33000000, dclk_rate_set = 33000000, dsi_rate_set = 0;//hz
 	u32 i = 0, j = 0;
 	u32 dsi_num = 0;
 
@@ -915,11 +918,13 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 	dclk_rate = lcdp->panel_info.lcd_dclk_freq * 1000000;//Mhz -> hz
 	if (LCD_IF_DSI == lcdp->panel_info.lcd_if) {
 		lcd_rate = dclk_rate * clk_info.dsi_div;
+#ifndef CONFIG_MACH_SUN55IW3
 		pll_rate = lcd_rate * clk_info.lcd_div;
 	} else {
 		lcd_rate = dclk_rate * clk_info.tcon_div;
 		pll_rate = lcd_rate * clk_info.lcd_div;
 	}
+
 	dsi_rate = pll_rate / clk_info.dsi_div;
 
 	if (lcdp->clk_parent) {
@@ -933,12 +938,26 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 		lcd_rate_set = pll_rate_set;
 
 	clk_set_rate(lcdp->clk, lcd_rate_set);
+#else
+	} else
+		lcd_rate = dclk_rate * clk_info.tcon_div;
+
+	dsi_rate = dclk_rate * clk_info.lcd_div;
+
+	clk_set_rate(lcdp->clk, lcd_rate);
+#endif
 	lcd_rate_set = clk_get_rate(lcdp->clk);
 	if (LCD_IF_DSI == lcdp->panel_info.lcd_if) {
 		if (lcdp->panel_info.lcd_dsi_if == LCD_DSI_IF_COMMAND_MODE)
+#ifdef CONFIG_MACH_SUN55IW3
+			dsi_rate_set = lcd_rate_set;
+		else
+			dsi_rate_set = lcd_rate_set / clk_info.dsi_div;
+#else
 			dsi_rate_set = pll_rate_set;
 		else
 			dsi_rate_set = pll_rate_set / clk_info.dsi_div;
+#endif
 		dsi_rate_set = (0 == clk_info.dsi_rate)? dsi_rate_set:clk_info.dsi_rate;
 		dsi_num =
 		    (lcdp->panel_info.lcd_tcon_mode == DISP_TCON_DUAL_DSI) ? 2
@@ -969,7 +988,7 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 				combphy_clk_config(lcdp->clk_mipi_dsi_combphy[i], panel);
 				// clk_set_rate(lcdp->clk_mipi_dsi_combphy[i], lcd_rate_set);
 				if (lcdp->panel_info.lcd_tcon_mode != DISP_TCON_DUAL_DSI)
-					clk_set_rate(lcdp->clk_tcon_lcd, pll_rate);
+					clk_set_rate(lcdp->clk_tcon_lcd, lcd_rate);
 			}
 #endif
 #ifdef CONFIG_MACH_SUN55IW5
@@ -977,7 +996,7 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 				combphy_clk_config(lcdp->clk_mipi_dsi_combphy[i], panel);
 				// clk_set_rate(lcdp->clk_mipi_dsi_combphy[i], lcd_rate_set);
 				if (lcdp->panel_info.lcd_tcon_mode != DISP_TCON_DUAL_DSI)
-					clk_set_rate(lcdp->clk_tcon_lcd, pll_rate);
+					clk_set_rate(lcdp->clk_tcon_lcd, lcd_rate);
 			}
 #endif
 
@@ -988,9 +1007,9 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 		/*disp_sys_clk_set_rate(lcdp->dsi_clk[1], dsi_rate_set);*/
 	}
 	dclk_rate_set = lcd_rate_set / clk_info.tcon_div;
-	if ((pll_rate_set != pll_rate) || (lcd_rate_set != lcd_rate)
-		|| (dclk_rate_set != dclk_rate)) {
+	if ((lcd_rate_set != lcd_rate) || (dclk_rate_set != dclk_rate)) {
 		/*  ajust the tcon_div to fix the real pll  */
+#ifndef CONFIG_MACH_SUN55IW3
 		if (pll_rate_set > pll_rate) {
 			panel->tcon_clk_div_ajust.clk_div_increase_or_decrease = INCREASE;
 			panel->tcon_clk_div_ajust.div_multiple = pll_rate_set / pll_rate;
@@ -1000,9 +1019,12 @@ static s32 lcd_clk_config(struct disp_device* lcd)
 			panel->tcon_clk_div_ajust.div_multiple = pll_rate / pll_rate_set;
 			dclk_rate_set *= panel->tcon_clk_div_ajust.div_multiple;
 		}
-
 		DE_WRN("disp %d, clk: pll(%ld),clk(%ld),dclk(%ld) dsi_rate(%ld)\n     clk real:pll(%ld),clk(%ld),dclk(%ld) dsi_rate(%ld)\n",
 			lcd->disp, pll_rate, lcd_rate, dclk_rate, dsi_rate, pll_rate_set, lcd_rate_set, dclk_rate_set, dsi_rate_set);
+#else
+		DE_WRN("disp %d, clk:tcon_clk(%ld),dclk(%ld) dsi_rate(%ld)\n     clk real:tcon_clk(%ld),dclk(%ld) dsi_rate(%ld)\n",
+			lcd->disp, lcd_rate, dclk_rate, dsi_rate, lcd_rate_set, dclk_rate_set, dsi_rate_set);
+#endif
 	}
 
 	return 0;

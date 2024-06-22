@@ -14,3 +14,4 @@ obj-$(CONFIG_$(SPL_)PIPE3_PHY) += ti-pipe3-phy.o
 obj-$(CONFIG_STI_USB_PHY) += sti_usb_phy.o
 obj-$(CONFIG_PHY_STM32_USBPHYC) += phy-stm32-usbphyc.o
 obj-$(CONFIG_MESON_GXL_USB_PHY) += meson-gxl-usb2.o meson-gxl-usb3.o
+obj-$(CONFIG_MIPI_DPHY_HELPERS) += phy-core-mipi-dphy.o

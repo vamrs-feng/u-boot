@@ -13,6 +13,7 @@ obj-$(CONFIG_AXPNULL_POWER)	+= pmu_axpnull.o
 obj-$(CONFIG_AXP858_POWER)      += pmu_axp858.o
 obj-$(CONFIG_AXP2101_POWER)      += pmu_axp2101.o
 obj-$(CONFIG_AXP2202_POWER)      += pmu_axp2202.o
+obj-$(CONFIG_AXP8191_POWER)      += pmu_axp8191.o
 obj-$(CONFIG_SUNXI_AXP152_POWER)      += pmu_axp152.o
 obj-$(CONFIG_AXP1530_POWER)      += pmu_axp1530.o
 obj-$(CONFIG_AXP81X_POWER)	+= pmu_axp81X.o

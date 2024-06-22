@@ -118,6 +118,28 @@ struct clk_hw {
 	const struct clk_init_data *init;
 };
 
+/**
+ * struct clk_rate_request - Structure encoding the clk constraints that
+ * a clock user might require.
+ *
+ * @rate:		Requested clock rate. This field will be adjusted by
+ *			clock drivers according to hardware capabilities.
+ * @min_rate:		Minimum rate imposed by clk users.
+ * @max_rate:		Maximum rate imposed by clk users.
+ * @best_parent_rate:	The best parent rate a parent can provide to fulfill the
+ *			requested constraints.
+ * @best_parent_hw:	The most appropriate parent clock that fulfills the
+ *			requested constraints.
+ *
+ */
+struct clk_rate_request {
+	unsigned long rate;
+	unsigned long min_rate;
+	unsigned long max_rate;
+	unsigned long best_parent_rate;
+	struct clk_hw *best_parent_hw;
+};
+
 struct clk_ops {
 	int		    (*prepare)(struct clk_hw *hw);
 	void	    (*unprepare)(struct clk_hw *hw);
@@ -128,6 +150,8 @@ struct clk_ops {
 						unsigned long parent_rate);
 	long		(*round_rate)(struct clk_hw *hw, unsigned long,
 					    unsigned long *);
+	int		(*determine_rate)(struct clk_hw *hw,
+					  struct clk_rate_request *req);
 	int		    (*set_parent)(struct clk_hw *hw, u8 index);
 	u8		    (*get_parent)(struct clk_hw *hw);
 	int		    (*set_rate)(struct clk_hw *hw, unsigned long,
@@ -172,6 +196,8 @@ struct sunxi_reg_ops {
         void (*reg_writel)(u32 val,void __iomem * reg);
 };
 
+int clk_divider_determine_rate(struct clk_hw *hw,
+				      struct clk_rate_request *req);
 void  init_clocks(void);
 
 

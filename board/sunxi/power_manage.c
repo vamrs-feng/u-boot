@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0+
  */
 
+#include <asm/io.h>
 #include <sunxi_power/power_manage.h>
 #include <sys_config.h>
 #include <sunxi_board.h>

@@ -12,9 +12,10 @@
 /*
  * This file contains clk functions, adapt for clk operation in boot.
  */
-
-#include<clk/clk.h>
+#include <clk/clk.h>
+#include <clk/clk_plat.h>
 #include <fdt_support.h>
+#include <dm/read.h>
 
 __attribute__((section(".data")))
 static HLIST_HEAD(clk_list);
@@ -349,6 +350,8 @@ int clk_prepare_enable(struct clk *clk)
 long clk_round_rate(struct clk *clk, unsigned long rate)
 {
 	unsigned long parent_rate = 0;
+	struct clk_rate_request req;
+	int ret;
 
 	if (!clk)
 		return 0;
@@ -357,11 +360,25 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 		return clk->rate;
 	}
 
-	if (clk->parent)
+	if (clk->parent) {
 		parent_rate = clk->parent->rate;
+		req.best_parent_hw = clk->parent->hw;
+		req.best_parent_rate = clk->parent->rate;
+	} else {
+		req.best_parent_hw = NULL;
+		req.best_parent_rate = 0;
+	}
 
-	return clk->ops->round_rate(clk->hw, rate, &parent_rate);
+	if (clk->ops->determine_rate) {
+		ret = clk->ops->determine_rate(clk->hw, &req);
+		if (ret)
+			return -1;
+		rate = req.rate;
+	} else {
+		rate = clk->ops->round_rate(clk->hw, rate, &parent_rate);
+	}
 
+	return rate;
 }
 
 struct clk *clk_get_parent(struct clk *clk)
@@ -419,6 +436,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	unsigned long best_parent_rate = 0;
 	int ret = 0;
 	unsigned long new_rate;
+	struct clk *parent;
 
 	/* bail early if nothing to do */
 	if (rate == clk_get_rate(clk) && !(clk->flags & CLK_GET_RATE_NOCACHE)) {
@@ -426,24 +444,48 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	}
 
 	/* calculate new rates and get the topmost changed clock */
-	if (clk->parent)
-		best_parent_rate = clk->parent->rate;
-
-	if (!clk->parent) {
+	if (clk->parent) {
+		parent = clk->parent;
+		best_parent_rate = parent->rate;
+	} else {
 		printf("%s: %s has NULL parent\n", __func__, clk->name);
 		ret = -1;
 
 		goto out;
 	}
 
-	if (!clk->ops->round_rate)
-		new_rate = clk->parent->new_rate;
-	else {
+	if (clk->ops->determine_rate) {
+		struct clk_rate_request req;
+
+		req.rate = rate;
+		if (parent) {
+			req.best_parent_hw = parent->hw;
+			req.best_parent_rate = parent->rate;
+		} else {
+			req.best_parent_hw = NULL;
+			req.best_parent_rate = 0;
+		}
+
+		ret = clk->ops->determine_rate(clk->hw, &req);
+		if (ret < 0)
+			goto out;
+
+		best_parent_rate = req.best_parent_rate;
+		new_rate = req.rate;
+	} else if (clk->ops->round_rate) {
 		new_rate = clk->ops->round_rate(clk->hw, rate, &best_parent_rate);
+	} else {
+		new_rate = clk->parent->new_rate;
 	}
 	clk->new_rate = new_rate;
 
 	/* change the rates */
+	if ((best_parent_rate != parent->rate) && (parent->ops->set_rate)) {
+		parent->ops->set_rate(parent->hw, best_parent_rate, parent->parent->rate);
+		if (parent->ops->recalc_rate)
+			parent->rate = parent->ops->recalc_rate(parent->hw, parent->parent->rate);
+	}
+
 	if (clk->ops->set_rate)
 		clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
 
@@ -707,4 +749,17 @@ struct clk *of_clk_get(int node_offset, int index)
 	clk = clk_get(NULL, clk_name);
 
 	return clk;
+}
+
+struct clk *clk_get_by_name(struct udevice *dev, const char *id)
+{
+	int index;
+	struct clk *c;
+
+	index = dev_read_stringlist_search(dev, "clock-names", id);
+	if (index >= 0) {
+		c = of_clk_get(ofnode_to_offset(dev_ofnode(dev)), index);
+		return c;
+	}
+	return NULL;
 }

@@ -663,6 +663,10 @@ int board_env_late_init(void)
 		sunxi_jpeg_display("bootlogo.jpg");
 #endif
 
+#ifdef CONFIG_AW_DRM
+		run_command("sunxi_show_logo", 0);
+#endif
+
 #ifdef CONFIG_SUNXI_SPINOR_BMP
 #if defined(CONFIG_CMD_FAT)
 		fat_read_logo_to_kernel("bootlogo.bmp");

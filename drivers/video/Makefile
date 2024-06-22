@@ -6,7 +6,10 @@
 ifdef CONFIG_DM
 obj-$(CONFIG_DISPLAY) += display-uclass.o
 obj-$(CONFIG_DM_VIDEO) += backlight-uclass.o
-obj-$(CONFIG_DM_VIDEO) += panel-uclass.o simple_panel.o
+obj-$(CONFIG_DM_VIDEO) += panel-uclass.o
+ifndef CONFIG_AW_DRM
+obj-$(CONFIG_DM_VIDEO) += simple_panel.o
+endif
 obj-$(CONFIG_DM_VIDEO) += video-uclass.o vidconsole-uclass.o
 obj-$(CONFIG_DM_VIDEO) += video_bmp.o
 obj-$(CONFIG_BACKLIGHT_PWM) += pwm_backlight.o
@@ -56,5 +59,6 @@ obj-${CONFIG_EXYNOS_FB} += exynos/
 obj-${CONFIG_VIDEO_ROCKCHIP} += rockchip/
 obj-${CONFIG_VIDEO_STM32} += stm32/
 
+obj-$(CONFIG_AW_DRM) += drm/
 obj-y += bridge/
 obj-y += sunxi/

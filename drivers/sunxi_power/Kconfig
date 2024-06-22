@@ -67,6 +67,15 @@ config AXP2202_POWER
 	Say y here to enable support for the axp2202 pmic found on some
 	sun50iw10p1 PMU/BMU dev board
 
+config AXP8191_POWER
+	bool "pmu/bmu axp8191 pmic support"
+	depends on SUNXI_PMU
+	select AXP_PMIC_BUS
+	select CMD_POWEROFF
+	---help---
+	Say y here to enable support for the axp8191 pmic found on some
+	sun55iw3p1 PMU dev board
+
 config SUNXI_AXP152_POWER
 	bool "pmu axp152 pmic support"
 	depends on SUNXI_PMU

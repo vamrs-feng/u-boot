@@ -14,6 +14,7 @@
 #include <dt-structs.h>
 #include <errno.h>
 
+#ifndef CONFIG_CLK_SUNXI
 static inline const struct clk_ops *clk_dev_ops(struct udevice *dev)
 {
 	return (const struct clk_ops *)dev->driver->ops;
@@ -410,3 +411,9 @@ UCLASS_DRIVER(clk) = {
 	.id		= UCLASS_CLK,
 	.name		= "clk",
 };
+#else
+int clk_set_defaults(struct udevice *dev)
+{
+	return 0;
+}
+#endif

@@ -439,8 +439,10 @@ int pwm_disable(int pwm)
 
 	list_for_each_entry(pchip, &pwm_list, list) {
 		if (pchip->pwm == pwm) {
-			if (pchip->ops->disable)
+			if (pchip->ops->disable) {
 				pchip->ops->disable(pchip);
+				return 0;
+			}
 		}
 	}
 
@@ -454,7 +456,7 @@ int pwm_set_polarity(int pwm, enum pwm_polarity polarity)
 		list_for_each_entry(pchip, &pwm_list, list) {
 			if (pchip->pwm == pwm) {
 				if (pchip->ops->set_polarity)
-					pchip->ops->set_polarity(pchip, polarity);
+					return pchip->ops->set_polarity(pchip, polarity);
 			}
 		}
 

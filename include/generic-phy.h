@@ -119,6 +119,20 @@ struct phy_ops {
 	* @return 0 if OK, or a negative error code
 	*/
 	int	(*power_off)(struct phy *phy);
+
+	/**
+	* configure - configure a PHY device
+	*
+	* @phy:	PHY port to be configured
+	* @params: PHY Parameters, underlying data is specific to the PHY function
+	*
+	* During runtime, the PHY may need to be configured for it's main function.
+	* This function configures the PHY for it's main function following
+	* power_on/off() after beeing initialized.
+	*
+	* Return: 0 if OK, or a negative error code
+	*/
+	int	(*configure)(struct phy *phy, void *params);
 };
 
 #ifdef CONFIG_PHY
@@ -163,6 +177,7 @@ int generic_phy_power_on(struct phy *phy);
  */
 int generic_phy_power_off(struct phy *phy);
 
+int generic_phy_configure(struct phy *phy, void *params);
 
 /**
  * generic_phy_get_by_index() - Get a PHY device by integer index.
@@ -243,6 +258,11 @@ static inline int generic_phy_power_on(struct phy *phy)
 }
 
 static inline int generic_phy_power_off(struct phy *phy)
+{
+	return 0;
+}
+
+static inline int generic_phy_configure(struct phy *phy, void *params)
 {
 	return 0;
 }

@@ -67,6 +67,7 @@ int  __attribute__((weak)) update_no_ext_info_to_kernel()
 }
 
 int disp_lcd_param_update_to_kernel(void);
+int sunxi_drm_kernel_para_flush(void);
 
 #ifdef CONFIG_SUNXI_BOOT_PARAM
 int update_fdt_dram_para_from_bootpara(void *dtb_base)
@@ -1326,6 +1327,9 @@ int save_bmp_logo_to_kernel(void);
 	save_bmp_logo_to_kernel();
 #endif
 
+#ifdef CONFIG_AW_DRM
+	sunxi_drm_kernel_para_flush();
+#endif
 #ifdef CONFIG_BOOT_GUI
 	save_disp_cmd();
 	disp_lcd_param_update_to_kernel();

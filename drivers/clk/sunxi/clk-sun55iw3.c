@@ -43,9 +43,9 @@ int cpus_clk_maxreg = CPUS_CLK_MAX_REG;
 SUNXI_CLK_FACTORS(pll_periph0_2x,          8,  8,  0,  0,  0,  0,  0,  0,  1,  1,  16,  3,   0,    0,  0,      31,     0,      0,      0,              0);
 SUNXI_CLK_FACTORS(pll_periph1_2x,          8,  8,  0,  0,  0,  0,  0,  0,  1,  1,  16,  3,   0,    0,  0,      31,     0,      0,      0,              0);
 SUNXI_CLK_FACTORS(pll_periph1_800m,        8,  8,  0,  0,  0,  0,  0,  0,  1,  1,  20,  3,    0,    0,  0,      31,     0,      0,      0,              0);
-SUNXI_CLK_FACTORS(pll_video0x4,		   8,  8,  0,  0,  0,  0,  0,  0,  1,  1,  0,  1,    0,    0,  0,      31,     0,     0,      0,		0);
-SUNXI_CLK_FACTORS(pll_video1x4,   	   8,  8,  0,  0,  0,  0,  0,  0,  1,  1,  0,  1,    0,    0,  0,      31,     0,     0,      0, 		0);
-SUNXI_CLK_FACTORS(pll_video3x4,		   8,  8,  0,  0,  0,  0,  0,  0,  1,  1,  0,  1,    0,    0,  0,      31,     24,     1,      PLL_VIDEO3PAT0, 0xd1303333);
+SUNXI_CLK_FACTORS(pll_video0x4,		   8,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,    0,    0,  0,      31,     0,     0,      0,		0);
+SUNXI_CLK_FACTORS(pll_video1x4,   	   8,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,    0,    0,  0,      31,     0,     0,      0, 		0);
+SUNXI_CLK_FACTORS(pll_video3x4,		   8,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,    0,    0,  0,      31,     24,     1,      PLL_VIDEO3PAT0, 0xd1303333);
 
 static int get_factors_pll_periph0_2x(u32 rate, u32 parent_rate,
 		struct clk_factors_value *factor)
@@ -104,63 +104,46 @@ static int get_factors_pll_periph1_800m(u32 rate, u32 parent_rate,
 	return 0;
 }
 
-static int get_factors_pll_video0x4(u32 rate, u32 parent_rate,
+/* pll_video0x4/pll_video1x4: 24*N/D2 */
+static unsigned long calc_rate_video0(u32 parent_rate,
 		struct clk_factors_value *factor)
 {
-	u64 tmp_rate;
-	int index;
+	u64 tmp_rate = (parent_rate ? parent_rate : 24000000);
+	tmp_rate = tmp_rate * (factor->factorn + 1);
+	do_div(tmp_rate, factor->factord2 + 1);
+	return (unsigned long)tmp_rate;
+}
 
-	if (!factor)
-		return -1;
+static int get_factors_pll_video(u32 rate, u32 parent_rate,
+		struct clk_factors_value *factor)
+{
+	u8 min_n = 49, max_n = 104;
+	u8 min_d2 = 0, max_d2 = 1;
+	u8 best_n = 0, best_d2 = 0;
+	u64 best_rate = 0;
 
-	tmp_rate = rate > pllvideo0x4_max ? pllvideo0x4_max : rate;
-	do_div(tmp_rate, 1000000);
-	index = tmp_rate;
+	for (factor->factorn = min_n; factor->factorn <= max_n; factor->factorn++) {
+		for (factor->factord2 = min_d2; factor->factord2 <= max_d2; factor->factord2++) {
+			u64 tmp_rate;
 
-	if (FACTOR_SEARCH(video0x4))
-		return -1;
+			tmp_rate = calc_rate_video0(parent_rate, factor);
+
+			if (tmp_rate > rate)
+				continue;
+
+			if ((rate - tmp_rate) < (rate - best_rate)) {
+				best_rate = tmp_rate;
+				best_n = factor->factorn;
+				best_d2 = factor->factord2;
+			}
+		}
+	}
+
+	factor->factorn = best_n;
+	factor->factord2 = best_d2;
 
 	return 0;
 }
-
-static int get_factors_pll_video1x4(u32 rate, u32 parent_rate,
-		struct clk_factors_value *factor)
-{
-	u64 tmp_rate;
-	int index;
-
-	if (!factor)
-		return -1;
-
-	tmp_rate = rate > pllvideo1x4_max ? pllvideo1x4_max : rate;
-	do_div(tmp_rate, 1000000);
-	index = tmp_rate;
-
-	if (FACTOR_SEARCH(video1x4))
-		return -1;
-
-	return 0;
-}
-
-static int get_factors_pll_video3x4(u32 rate, u32 parent_rate,
-		struct clk_factors_value *factor)
-{
-	u64 tmp_rate;
-	int index;
-
-	if (!factor)
-		return -1;
-
-	tmp_rate = rate > pllvideo3x4_max ? pllvideo3x4_max : rate;
-	do_div(tmp_rate, 1000000);
-	index = tmp_rate;
-
-	if (FACTOR_SEARCH(video3x4))
-		return -1;
-
-	return 0;
-}
-
 
 static unsigned long calc_rate_pll_periph(u32 parent_rate,
 		struct clk_factors_value *factor)
@@ -180,25 +163,15 @@ static unsigned long calc_rate_pll_periph(u32 parent_rate,
 	return (unsigned long)tmp_rate;
 }
 
-/*    pll_video0x4/pll_video1x4: 24*N/D1    */
-static unsigned long calc_rate_video0(u32 parent_rate,
-		struct clk_factors_value *factor)
-{
-	u64 tmp_rate = (parent_rate ? parent_rate : 24000000);
-	tmp_rate = tmp_rate * (factor->factorn + 1);
-	do_div(tmp_rate, (factor->factord1 + 1) * (factor->factord2 + 1));
-	return (unsigned long)tmp_rate;
-}
-
 static const char *hosc_parents[] = {"hosc"};
 struct factor_init_data sunxi_factos[] = {
 	/* name        parent      parent_num, flags				reg          lock_reg		lock_bit     pll_lock_ctrl_reg lock_en_bit	lock_mode           config             get_factors					calc_rate              priv_ops*/
 	{"pll_periph0_2x", hosc_parents, 1,          0,                    PLL_PERIPH0, PLL_PERIPH0, LOCKBIT(28), PLL_PERIPH0, 29,          PLL_LOCK_NEW_MODE, &sunxi_clk_factor_pll_periph0_2x, &get_factors_pll_periph0_2x, &calc_rate_pll_periph, (struct clk_ops *)NULL},
 	{"pll_periph1_2x", hosc_parents, 1,          0,                    PLL_PERIPH1, PLL_PERIPH1, LOCKBIT(28), PLL_PERIPH1, 29,          PLL_LOCK_NEW_MODE, &sunxi_clk_factor_pll_periph1_2x, &get_factors_pll_periph1_2x, &calc_rate_pll_periph, (struct clk_ops *)NULL},
 	{"pll_periph1_800m", hosc_parents, 1,          0,                    PLL_PERIPH1, PLL_PERIPH1, LOCKBIT(28), PLL_PERIPH1, 29,          PLL_LOCK_NEW_MODE, &sunxi_clk_factor_pll_periph1_800m, &get_factors_pll_periph1_800m, &calc_rate_pll_periph, (struct clk_ops *)NULL},
-	{"pll_video0x4",    hosc_parents,    1,		CLK_NO_DISABLE,      PLL_VIDEO0,  PLL_VIDEO0,  LOCKBIT(28), PLL_VIDEO0,   29,         PLL_LOCK_NEW_MODE,  &sunxi_clk_factor_pll_video0x4,  &get_factors_pll_video0x4,  &calc_rate_video0,        (struct clk_ops *)NULL},
-	{"pll_video1x4",    hosc_parents,    1,		CLK_NO_DISABLE,      PLL_VIDEO1,  PLL_VIDEO1,  LOCKBIT(28), PLL_VIDEO1,   29,         PLL_LOCK_NEW_MODE,  &sunxi_clk_factor_pll_video1x4,  &get_factors_pll_video1x4,  &calc_rate_video0,        (struct clk_ops *)NULL},
-	{"pll_video3x4",    hosc_parents,    1,		CLK_NO_DISABLE,      PLL_VIDEO3,  PLL_VIDEO3,  LOCKBIT(28), PLL_VIDEO3,   29,         PLL_LOCK_NEW_MODE,  &sunxi_clk_factor_pll_video3x4,  &get_factors_pll_video3x4,  &calc_rate_video0,        (struct clk_ops *)NULL},
+	{"pll_video0x4",    hosc_parents,    1,		CLK_NO_DISABLE,      PLL_VIDEO0,  PLL_VIDEO0,  LOCKBIT(28), PLL_VIDEO0,   29,         PLL_LOCK_NEW_MODE,  &sunxi_clk_factor_pll_video0x4,  &get_factors_pll_video,  &calc_rate_video0,        (struct clk_ops *)NULL},
+	{"pll_video1x4",    hosc_parents,    1,		CLK_NO_DISABLE,      PLL_VIDEO1,  PLL_VIDEO1,  LOCKBIT(28), PLL_VIDEO1,   29,         PLL_LOCK_NEW_MODE,  &sunxi_clk_factor_pll_video1x4,  &get_factors_pll_video,  &calc_rate_video0,        (struct clk_ops *)NULL},
+	{"pll_video3x4",    hosc_parents,    1,		CLK_NO_DISABLE,      PLL_VIDEO3,  PLL_VIDEO3,  LOCKBIT(28), PLL_VIDEO3,   29,         PLL_LOCK_NEW_MODE,  &sunxi_clk_factor_pll_video3x4,  &get_factors_pll_video,  &calc_rate_video0,        (struct clk_ops *)NULL},
 };
 
 static const char *de_parents[] = {"pll_periph0_300m", "pll_periph1_300m", "pll_video3x4", "pll_video3x3"};
@@ -266,18 +239,18 @@ struct periph_init_data sunxi_periphs_init[] = {
 	{"mipi_dsi0",      0,                    dsi0_parents,       ARRAY_SIZE(dsi0_parents),       &sunxi_clk_periph_mipi_dsi0        },
 	{"mipi_dsi1",      0,                    dsi1_parents,       ARRAY_SIZE(dsi1_parents),       &sunxi_clk_periph_mipi_dsi1        },
 
-	{"tcon_lcd0",      0,                    tcon_lcd0_parents,       ARRAY_SIZE(tcon_lcd0_parents),       &sunxi_clk_periph_tcon_lcd0        },
-	{"tcon_lcd1",      0,                    tcon_lcd1_parents,       ARRAY_SIZE(tcon_lcd1_parents),       &sunxi_clk_periph_tcon_lcd1        },
-	{"tcon_lcd2",      0,                    tcon_lcd2_parents,       ARRAY_SIZE(tcon_lcd2_parents),       &sunxi_clk_periph_tcon_lcd2        },
-	{"tcon_tv0",      0,                    tcon_tv0_parents,       ARRAY_SIZE(tcon_tv0_parents),       &sunxi_clk_periph_tcon_tv0        },
-	{"tcon_tv1",      0,                    tcon_tv1_parents,       ARRAY_SIZE(tcon_tv1_parents),       &sunxi_clk_periph_tcon_tv1        },
+	{"tcon_lcd0",      CLK_SET_RATE_PARENT,                    tcon_lcd0_parents,       ARRAY_SIZE(tcon_lcd0_parents),       &sunxi_clk_periph_tcon_lcd0        },
+	{"tcon_lcd1",      CLK_SET_RATE_PARENT,                    tcon_lcd1_parents,       ARRAY_SIZE(tcon_lcd1_parents),       &sunxi_clk_periph_tcon_lcd1        },
+	{"tcon_lcd2",      CLK_SET_RATE_PARENT,                    tcon_lcd2_parents,       ARRAY_SIZE(tcon_lcd2_parents),       &sunxi_clk_periph_tcon_lcd2        },
+	{"tcon_tv0",      CLK_SET_RATE_PARENT,                    tcon_tv0_parents,       ARRAY_SIZE(tcon_tv0_parents),       &sunxi_clk_periph_tcon_tv0        },
+	{"tcon_tv1",      CLK_SET_RATE_PARENT,                    tcon_tv1_parents,       ARRAY_SIZE(tcon_tv1_parents),       &sunxi_clk_periph_tcon_tv1        },
 
-	{"mipi_dsi_combphy0",      0,                    combphy0_parents,       ARRAY_SIZE(combphy0_parents),       &sunxi_clk_periph_mipi_dsi_combphy0        },
-	{"mipi_dsi_combphy1",      0,                    combphy1_parents,       ARRAY_SIZE(combphy1_parents),       &sunxi_clk_periph_mipi_dsi_combphy1        },
+	{"mipi_dsi_combphy0",      CLK_SET_RATE_PARENT,                    combphy0_parents,       ARRAY_SIZE(combphy0_parents),       &sunxi_clk_periph_mipi_dsi_combphy0        },
+	{"mipi_dsi_combphy1",      CLK_SET_RATE_PARENT,                    combphy1_parents,       ARRAY_SIZE(combphy1_parents),       &sunxi_clk_periph_mipi_dsi_combphy1        },
 
 	{"tcontv",      0,                    tcontv_parents,       ARRAY_SIZE(tcontv_parents),       &sunxi_clk_periph_tcontv        },
 	{"tcontv1",      0,                    tcontv1_parents,       ARRAY_SIZE(tcontv1_parents),       &sunxi_clk_periph_tcontv1        },
-	{"edp",      0,                    edp_parents,       ARRAY_SIZE(edp_parents),       &sunxi_clk_periph_edp        },
+	{"edp",      CLK_SET_RATE_PARENT,                    edp_parents,       ARRAY_SIZE(edp_parents),       &sunxi_clk_periph_edp        },
 	{"edp_24m",      0,                    hosc_parents,       ARRAY_SIZE(hosc_parents),       &sunxi_clk_periph_edp_24m        },
 	{"hdmi_24m",      0,                    hosc_parents,       ARRAY_SIZE(hosc_parents),       &sunxi_clk_periph_hdmi_24m        },
 	{"hdmi_peri0x2",      0,                hosc_parents,       ARRAY_SIZE(hosc_parents),       &sunxi_clk_periph_hdmi_peri02x     },
@@ -333,6 +306,52 @@ struct periph_init_data *sunxi_clk_get_periph_cpus_by_name(const char *name)
 	return NULL;
 }
 
+static int clk_video_set_rate(struct clk_hw *hw, unsigned long rate, unsigned long parent_rate)
+{
+	unsigned long factor_m = 0;
+	unsigned long reg;
+	struct sunxi_clk_periph *periph = to_clk_periph(hw);
+	struct sunxi_clk_periph_div *divider = &periph->divider;
+	unsigned long div, div_m = 0;
+
+	div = DIV_ROUND_UP_ULL(parent_rate, rate);
+
+	if (!div) {
+		div_m = 0;
+	} else {
+		div_m = 1 << divider->mwidth;
+
+		factor_m = (div > div_m ? div_m : div) - 1;
+		div_m = factor_m;
+	}
+
+	reg = periph_readl(periph, divider->reg);
+	if (divider->mwidth)
+		reg = SET_BITS(divider->mshift, divider->mwidth, reg, div_m);
+	periph_writel(periph, reg, divider->reg);
+
+	return 0;
+}
+
+struct clk_ops disp_priv_ops;
+void set_disp_priv_ops(struct clk_ops *priv_ops)
+{
+	priv_ops->determine_rate = clk_divider_determine_rate;
+	priv_ops->set_rate = clk_video_set_rate;
+}
+
+void sunxi_set_clk_priv_ops(char *clk_name, struct clk_ops *clk_priv_ops,
+	void (*set_priv_ops)(struct clk_ops *priv_ops))
+{
+	int i = 0;
+	sunxi_clk_get_periph_ops(clk_priv_ops);
+	set_priv_ops(clk_priv_ops);
+	for (i = 0; i < (ARRAY_SIZE(sunxi_periphs_init)); i++) {
+		if (!strcmp(sunxi_periphs_init[i].name, clk_name))
+			sunxi_periphs_init[i].periph->priv_clkops = clk_priv_ops;
+	}
+}
+
 void init_clocks(void)
 {
 	int i;
@@ -341,6 +360,15 @@ void init_clocks(void)
 
 	/* get clk register base address */
 	sunxi_clk_base = (void *)0x02001000; // fixed base address.
+
+	sunxi_set_clk_priv_ops("tcon_lcd0", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("tcon_lcd1", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("tcon_lcd2", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("mipi_dsi_combphy0", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("mipi_dsi_combphy1", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("tcon_tv0", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("tcon_tv1", &disp_priv_ops, set_disp_priv_ops);
+	sunxi_set_clk_priv_ops("edp", &disp_priv_ops, set_disp_priv_ops);
 
 	sunxi_clk_factor_initlimits();
 

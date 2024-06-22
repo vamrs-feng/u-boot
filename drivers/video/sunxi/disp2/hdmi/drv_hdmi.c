@@ -14,6 +14,7 @@
  * GNU General Public License for more details.
  *
  */
+#include <clk/clk_plat.h>
 #include "drv_hdmi_i.h"
 #include "hdmi_core.h"
 #include "../disp/disp_sys_intf.h"
