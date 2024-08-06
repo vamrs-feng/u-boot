@@ -29,6 +29,9 @@
 #include <sunxi_avb.h>
 #include <asm/arch/efuse.h>
 #include <sunxi_image_verifier.h>
+#if defined(CONFIG_AW_DRM)
+#include <drm/drm_logo.h>
+#endif
 DECLARE_GLOBAL_DATA_PTR;
 
 /* int do_go(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[]); */
@@ -1600,6 +1603,9 @@ static int sunxi_fastboot_init(void)
 	printf("start to display fastbootlogo.bmp\n");
 #if defined(CONFIG_CMD_SUNXI_BMP) || defined(CONFIG_SUNXI_TV_FASTLOGO) || defined(CONFIG_EINK200_SUNXI)
 	sunxi_bmp_display("fastbootlogo.bmp");
+#endif
+#if defined(CONFIG_AW_DRM)
+	sunxi_show_bmp("fastbootlogo.bmp");
 #endif
 	char *p = NULL;
 	p       = env_get("snum");

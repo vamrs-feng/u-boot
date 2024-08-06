@@ -15,6 +15,7 @@ struct backlight_ops {
 	 * @return 0 if OK, -ve on error
 	 */
 	int (*enable)(struct udevice *dev);
+	int (*disable)(struct udevice *dev);
 };
 
 #define backlight_get_ops(dev)	((struct backlight_ops *)(dev)->driver->ops)
@@ -26,5 +27,6 @@ struct backlight_ops {
  * @return 0 if OK, -ve on error
  */
 int backlight_enable(struct udevice *dev);
+int backlight_disable(struct udevice *dev);
 
 #endif

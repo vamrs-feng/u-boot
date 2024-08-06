@@ -106,6 +106,7 @@ struct drm_framebuffer {
 	int hot_y;
 };
 
+struct drm_framebuffer *drm_fb_lock(void);
 int drm_framebuffer_alloc(struct sunxi_drm_device *drm, struct drm_mode_fb_cmd2 *cmd);
 int drm_framebuffer_free(struct sunxi_drm_device *drm, struct drm_framebuffer *fb);
 struct drm_framebuffer *drm_framebuffer_lookup(struct sunxi_drm_device *drm, int fb_id);

@@ -233,18 +233,35 @@ static struct de_top_desc de355 = {
 	.check_finish = de_top_check_display_rcq_update_finish_with_clear,
 	.set_chn2core_mux = de_top_set_chn2core_mux_v2,
 };
-
 static struct de_top_desc de352 = {
 	.version = 0x352,
-	.mbus_reset_offset = 4,
+	.support_offline = 1 << ONE_FRAME_DELAY | 1 << CURRENT_FRAME,
+	.support_channel_mux = 1,
+	.support_mbus_reset = 1,
+	.support_channel_clk = 1,
+	.de_reset_offset = DE_RESET_OFFSET,
+	.de_clk_offset = DE_CLK_OFFSET,
 	.disp_clk_shift = 4,
+	.mbus_reset_offset = 4,
+	.mbus_clk_offset = DE_MBUS_CLOCK_OFFSET,
+	.glb_ctl_offset = RTMX_GLB_CTL_OFFSET,
+	.auto_clk_offset = RTMX_AUTO_CLK_OFFSET,
+	.auto_clk_disp_shift = 0,
+	.auto_clk_disp_size = 0x40,
+	.out_size_offset = RTMX_OUT_SIZE_OFFSET,
+	.de2tcon_mux_offset = DE2TCON_MUX_OFFSET,
+	.rcq_ctl_offset = RTMX_RCQ_CTL_OFFSET,
+	.rcq_header_laddr_offset = RTMX_RCQ_HEADER_LADDR_OFFSET,
 	.rtwb_mux_offset = DE_RTWB_MUX_OFFSET_V2,
 	.rtwb_timing_shift = 4,
 	.rtwb_self_wb_start_shift = 0,
 	.port2chn_mux_offset = DE_PORT2CHN_MUX_OFFSET_V2,
-	.support_offline = 1,
 	.channel_clk_offset = DE_GATING_CTL_OFFSET,
 	.reserve_ctl_offset = DE_RESERVE_CTL_OFFSET,
+	.query_state_with_clear = de_top_query_state_with_clear_v3xx,
+	.display_config = de_top_display_config_v2,
+	.check_finish = de_top_check_display_rcq_update_finish_with_clear,
+	.set_chn2core_mux = de_top_set_chn2core_mux_v2,
 };
 
 static struct de_top_desc de210 = {

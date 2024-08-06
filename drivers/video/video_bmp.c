@@ -198,7 +198,7 @@ int video_bmp_display(struct udevice *dev, ulong bmp_image, int x, int y,
 	struct bmp_image *bmp = map_sysmem(bmp_image, 0);
 	uchar *bmap;
 	ushort padded_width;
-	unsigned long width, height, byte_width;
+	unsigned long width, height, byte_width, bmp_stride;
 	unsigned long pwidth = priv->xsize;
 	unsigned colours, bpix, bmp_bpix;
 	struct bmp_color_table_entry *palette;
@@ -248,6 +248,7 @@ int video_bmp_display(struct udevice *dev, ulong bmp_image, int x, int y,
 		video_set_cmap(dev, palette, colours);
 
 	padded_width = (width & 0x3 ? (width & ~0x3) + 4 : width);
+	bmp_stride = ((width * bmp_bpix + 31) >> 5) << 2;
 
 	if (align) {
 		video_splash_align_axis(&x, priv->xsize, width);
@@ -324,6 +325,7 @@ int video_bmp_display(struct udevice *dev, ulong bmp_image, int x, int y,
 				*(fb++) = *(bmap++);
 				*(fb++) = 0;
 			}
+			bmap += bmp_stride - width * (bmp_bpix / 8);
 			fb -= priv->line_length + width * (bpix / 8);
 		}
 		break;
@@ -337,6 +339,7 @@ int video_bmp_display(struct udevice *dev, ulong bmp_image, int x, int y,
 				*(fb++) = *(bmap++);
 				*(fb++) = *(bmap++);
 			}
+			bmap += bmp_stride - width * (bmp_bpix / 8);
 			fb -= priv->line_length + width * (bpix / 8);
 		}
 		break;

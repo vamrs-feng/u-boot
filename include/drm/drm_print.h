@@ -33,7 +33,7 @@ struct drm_printer {
 	const char *prefix;
 };
 
-#define drm_printf(p, fmt, args...)	pr_err(fmt, ##args)
+#define drm_printf(p, fmt, args...)	printf(fmt, ##args)
 
 /**
  * drm_printf_indent - Print to a &drm_printer stream with indentation
@@ -47,7 +47,9 @@ struct drm_printer {
 #define DRM_WARN(fmt, args...) pr_err(fmt, ##args)
 #define DRM_ERROR(fmt, args...) pr_err(fmt, ##args)
 #define DRM_INFO(fmt, args...) pr_info(fmt, ##args)
+#define DRM_NOTE(fmt, args...) pr_info(fmt, ##args)
 #define DRM_DEBUG(fmt, args...) pr_debug(fmt, ##args)
+#define DRM_DEBUG_KMS(fmt, args...) pr_debug(fmt, ##args)
 #define DRM_DEBUG_DRIVER(fmt, args...) pr_debug(fmt, ##args)
 
 

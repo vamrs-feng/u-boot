@@ -8,6 +8,8 @@
 #include <dt-bindings/gpio/gpio.h>
 /*#include "sun50iw10p1-pinctrl.dtsi"*/
 #include <dt-bindings/thermal/thermal.h>
+#include <media_bus_format.h>
+#include <drm/drm_mipi_dsi.h>
 / {
 	model = "sun55iw3";
 	compatible = "allwinner,a523", "arm,sun55iw3p1";
@@ -478,19 +480,84 @@ pwm: pwm@2000c00 {
 			compatible = "allwinner,sunxi-drm";
 			status = "okay";
 			route {
-				route_lvds0: route_lvds0 {
+				disp0_lvds0: disp0_lvds0 {
 					status = "disabled";
 					endpoints = <&disp0_out_tcon0 &tcon0_out_lvds0>;
 					logo,uboot = "bootlogo.bmp";
 				};
-				route_rgb0: route_rgb0 {
+				disp0_rgb0: disp0_rgb0 {
 					status = "disabled";
 					endpoints = <&disp0_out_tcon0 &tcon0_out_rgb0>;
 					logo,uboot = "bootlogo.bmp";
 				};
-				route_dsi0: route_dsi0 {
+				disp0_dsi0: disp0_dsi0 {
 					status = "disabled";
 					endpoints = <&disp0_out_tcon0 &tcon0_out_dsi0>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp0_lvds1: disp0_lvds1 {
+					status = "disabled";
+					endpoints = <&disp0_out_tcon4 &tcon4_out_lvds1>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp0_rgb1: disp0_rgb1 {
+					status = "disabled";
+					endpoints = <&disp0_out_tcon4 &tcon4_out_rgb1>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp0_dsi1: disp0_dsi1 {
+					status = "disabled";
+					endpoints = <&disp0_out_tcon1 &tcon1_out_dsi1>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp0_edp: disp0_edp {
+					status = "disabled";
+					endpoints = <&disp0_out_tcon3 &tcon3_out_edp>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp0_hdmi: disp0_hdmi {
+					status = "disabled";
+					endpoints = <&disp0_out_tcon2 &tcon2_out_hdmi>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_lvds0: disp1_lvds0 {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon0 &tcon0_out_lvds0>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_rgb0: disp1_rgb0 {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon0 &tcon0_out_rgb0>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_dsi0: disp1_dsi0 {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon0 &tcon0_out_dsi0>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_lvds1: disp1_lvds1 {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon4 &tcon4_out_lvds1>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_rgb1: disp1_rgb1 {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon4 &tcon4_out_rgb1>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_dsi1: disp1_dsi1 {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon1 &tcon1_out_dsi1>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_edp: disp1_edp {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon3 &tcon3_out_edp>;
+					logo,uboot = "bootlogo.bmp";
+				};
+				disp1_hdmi: disp1_hdmi {
+					status = "disabled";
+					endpoints = <&disp1_out_tcon2 &tcon2_out_hdmi>;
 					logo,uboot = "bootlogo.bmp";
 				};
 			};
@@ -937,6 +1004,8 @@ pwm: pwm@2000c00 {
 			compatible = "allwinner,drm-edp";
 			reg = <0x0 0x05720000 0x0 0x4000>;
 			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_edp>, <&clk_edp_24m>;
+			clock-names = "clk_edp", "clk_24m_edp";
 			//FIXME
 			status = "disabled";
 			ports {
@@ -955,26 +1024,11 @@ pwm: pwm@2000c00 {
 					#address-cells = <1>;
 					#size-cells = <0>;
 					reg = <1>;
-/*					edp_out_panel: endpoint@0 {
+					edp_out_panel: endpoint@0 {
 						reg = <0>;
-						remote-endpoint = <&edp_panel>;
-					};*/
-				};
-			};
-	/*		edp_panel: panel@0 {
-				reg = <0>;
-				ports {
-					#address-cells = <1>;
-					#size-cells = <0>;
-					edp_panel_in: port@0 {
-						reg = <0>;
-						edp_panel_in_edp: endpoint@0 {
-							reg = <0>;
-							remote-endpoint = <&edp_out_panel>;
-						};
 					};
 				};
-			}*/
+			};
 		};
 
 		disp: disp@5000000 {
@@ -1021,8 +1075,12 @@ pwm: pwm@2000c00 {
 		hdmi: hdmi@5520000 {
 			compatible = "allwinner,sunxi-hdmi";
 			reg = <0x0 0x05520000 0x0 0x100000>;
-			clocks = <&clk_hdmi>, <&clk_hdmi_24m>,
-				<&clk_hdmi_sub>, <&clk_tcon_tv0>;
+			clocks = <&clk_tcon_tv0>, <&clk_hdmi>, <&clk_hdmi_24m>,
+				<&clk_hdmi_sub>;
+			clock-names = "clk_tcon_tv",
+				"clk_hdmi",
+				"clk_hdmi_24M",
+				"rst_main";
 			status = "okay";
 			ports {
 				#address-cells = <1>;

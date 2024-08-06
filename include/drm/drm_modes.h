@@ -8,6 +8,10 @@
 #define _DRM_MODES_H
 
 #include "fdtdec.h"
+#include <linux/list.h>
+
+#define PICOS2KHZ(a)	(1000000000UL / (a))
+#define KHZ2PICOS(a)	(1000000000UL / (a))
 
 #define DRM_DISPLAY_INFO_LEN	32
 #define DRM_CONNECTOR_NAME_LEN	32
@@ -106,6 +110,14 @@
 #define DRM_EDID_PT_STEREO         (1 << 5)
 #define DRM_EDID_PT_INTERLACED     (1 << 7)
 
+
+#define DRM_MODE(nm, t, c, hd, hss, hse, ht, hsk, vd, vss, vse, vt, vs, f) \
+	.name = nm, .status = 0, .type = (t), .clock = (c), \
+	.hdisplay = (hd), .hsync_start = (hss), .hsync_end = (hse), \
+	.htotal = (ht), .hskew = (hsk), .vdisplay = (vd), \
+	.vsync_start = (vss), .vsync_end = (vse), .vtotal = (vt), \
+	.vscan = (vs), .flags = (f)
+
 /* see also http://vektor.theorem.ca/graphics/ycbcr/ */
 enum v4l2_colorspace {
 	/*
@@ -178,41 +190,6 @@ enum v4l2_colorspace {
 #define DRM_MODE_MATCH_FLAGS		(1 << 2)
 #define DRM_MODE_MATCH_3D_FLAGS		(1 << 3)
 #define DRM_MODE_MATCH_ASPECT_RATIO	(1 << 4)
-
-struct drm_display_mode {
-	/* Proposed mode values */
-	int clock;		/* in kHz */
-	int hdisplay;
-	int hsync_start;
-	int hsync_end;
-	int htotal;
-	int vdisplay;
-	int vsync_start;
-	int vsync_end;
-	int vtotal;
-	int vrefresh;
-	int vscan;
-	unsigned int flags;
-	int picture_aspect_ratio;
-	int hskew;
-	unsigned int type;
-	/* Actual mode we give to hw */
-	int crtc_clock;         /* in KHz */
-	int crtc_hdisplay;
-	int crtc_hblank_start;
-	int crtc_hblank_end;
-	int crtc_hsync_start;
-	int crtc_hsync_end;
-	int crtc_htotal;
-	int crtc_hskew;
-	int crtc_vdisplay;
-	int crtc_vblank_start;
-	int crtc_vblank_end;
-	int crtc_vsync_start;
-	int crtc_vsync_end;
-	int crtc_vtotal;
-	bool invalid;
-};
 
 /**
  * enum drm_mode_status - hardware support status of a mode
@@ -301,6 +278,56 @@ enum drm_mode_status {
 	MODE_STALE = -3,
 	MODE_BAD = -2,
 	MODE_ERROR = -1
+};
+
+
+struct drm_display_mode {
+	/**
+	 * @head:
+	 *
+	 * struct list_head for mode lists.
+	 */
+	struct list_head head;
+
+	char name[128];
+
+	/* Proposed mode values */
+	int clock;		/* in kHz */
+	int hdisplay;
+	int hsync_start;
+	int hsync_end;
+	int htotal;
+	int vdisplay;
+	int vsync_start;
+	int vsync_end;
+	int vtotal;
+	int vrefresh;
+	int vscan;
+	unsigned int flags;
+	int picture_aspect_ratio;
+	int hskew;
+	unsigned int type;
+	/* Actual mode we give to hw */
+	int crtc_clock;         /* in KHz */
+	int crtc_hdisplay;
+	int crtc_hblank_start;
+	int crtc_hblank_end;
+	int crtc_hsync_start;
+	int crtc_hsync_end;
+	int crtc_htotal;
+	int crtc_hskew;
+	int crtc_vdisplay;
+	int crtc_vblank_start;
+	int crtc_vblank_end;
+	int crtc_vsync_start;
+	int crtc_vsync_end;
+	int crtc_vtotal;
+	bool invalid;
+
+	u16 width_mm;
+	u16 height_mm;
+
+	enum drm_mode_status status;
 };
 
 /*
@@ -481,6 +508,7 @@ struct drm_mode_fb_cmd2 {
 struct drm_display_mode *drm_mode_create(void);
 void drm_mode_copy(struct drm_display_mode *dst,
 		   const struct drm_display_mode *src);
+struct drm_display_mode *drm_mode_duplicate(const struct drm_display_mode *mode);
 void drm_mode_destroy(struct drm_display_mode *mode);
 bool drm_mode_match(const struct drm_display_mode *mode1,
 		    const struct drm_display_mode *mode2,
@@ -492,5 +520,19 @@ void drm_display_mode_from_videomode(const struct videomode *vm,
 void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
 				   struct videomode *vm);
 int drm_mode_vrefresh(const struct drm_display_mode *mode);
+void drm_mode_set_name(struct drm_display_mode *mode);
+
+struct drm_display_mode *drm_cvt_mode(int hdisplay,
+				      int vdisplay, int vrefresh,
+				      bool reduced, bool interlaced, bool margins);
+
+struct drm_display_mode *
+drm_gtf_mode(int hdisplay, int vdisplay, int vrefresh,
+	     bool interlaced, int margins);
+
+struct drm_display_mode *
+drm_gtf_mode_complex(int hdisplay, int vdisplay,
+		     int vrefresh, bool interlaced, int margins,
+		     int GTF_M, int GTF_2C, int GTF_K, int GTF_2J);
 
 #endif

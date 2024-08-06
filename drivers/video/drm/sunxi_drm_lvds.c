@@ -33,6 +33,9 @@
 #include "sunxi_drm_crtc.h"
 #include "sunxi_drm_drv.h"
 
+#if IS_ENABLED(CONFIG_MACH_SUN55IW6)
+#define LVDS_DISPLL_CLK
+#endif
 struct lvds_data {
 	int id;
 };
@@ -118,7 +121,11 @@ static int sunxi_lvds_connector_enable(struct sunxi_drm_connector *conn,
 	disp_cfg.irq_handler = scrtc_state->crtc_irq_handler;
 	disp_cfg.irq_data = state;
 	disp_cfg.tcon_lcd_div = 7;
-
+#ifdef LVDS_DISPLL_CLK
+	disp_cfg.displl_clk = true;
+#else
+	disp_cfg.displl_clk = false;
+#endif
 	memcpy(&disp_cfg.lvds_para, &lvds->lvds_para,
 	       sizeof(struct disp_lvds_para));
 
@@ -317,6 +324,8 @@ static int sunxi_drm_lvds_probe(struct udevice *dev)
 
 	sunxi_drm_connector_bind(&lvds->connector, dev, lvds->lvds_id, &lvds_connector_funcs,
 				NULL, DRM_MODE_CONNECTOR_LVDS);
+
+	of_periph_clk_config_setup(ofnode_to_offset(dev_ofnode(dev)));
 	lvds->bound = true;
 
 	return 0;

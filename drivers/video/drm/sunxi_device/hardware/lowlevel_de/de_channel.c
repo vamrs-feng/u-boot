@@ -511,6 +511,7 @@ static s32 de_rtmx_chn_fix_size(struct de_scaler_handle *hdl, struct de_chn_info
 		&& (chn_info->ovl_out_win.height == chn_info->scn_win.height)
 		&& (chn_info->ovl_out_win.width == chn_info->scn_win.width)) {
 		chn_info->scale_en = 0;
+		return 0;
 	} else {
 		chn_info->scale_en = 1;
 	}

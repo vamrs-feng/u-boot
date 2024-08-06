@@ -513,8 +513,16 @@ s32 dsi_dcs_rd(u32 sel, u8 cmd, u8 *para_p, u32 *num_p)
 		count++;
 		dsi_delay_us(100);
 	}
-	if (count >= 50)
+	if (count >= 50) {
 		dsi_dev[sel]->dsi_basic_ctl0.bits.inst_st = 0;
+		dsi_dev[sel]->dsi_gctl.bits.dsi_en = 0;
+		dsi_delay_us(10);
+		dphy_dev[sel]->dphy_gctl.bits.module_en = 0;
+		dsi_delay_us(10);
+		dphy_dev[sel]->dphy_gctl.bits.module_en = 1;
+		dsi_delay_us(10);
+		dsi_dev[sel]->dsi_gctl.bits.dsi_en = 1;
+	}
 
 	if (dsi_dev[sel]->dsi_cmd_ctl.bits.rx_flag) {
 		if (dsi_dev[sel]->dsi_cmd_ctl.bits.rx_overflow)

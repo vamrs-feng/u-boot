@@ -14,9 +14,12 @@
 #include "drm/sunxi_drm_helper_funcs.h"
 #endif
 
+#define GPIO_NUM_MAX 3
+#define POWER_NUM_MAX 3
+
 struct pwm_backlight_priv {
 	u32 regulator;
-	ulong enable_gpio;
+	ulong enable_gpio[GPIO_NUM_MAX];
 	int sunxi_pwm;
 
 	struct udevice *reg;
@@ -35,7 +38,7 @@ static int pwm_backlight_enable(struct udevice *dev)
 {
 	struct pwm_backlight_priv *priv = dev_get_priv(dev);
 	uint duty_cycle;
-	int ret;
+	int ret, i;
 #ifndef CONFIG_AW_DRM
 	struct dm_regulator_uclass_platdata *plat;
 	if (priv->reg) {
@@ -80,7 +83,30 @@ static int pwm_backlight_enable(struct udevice *dev)
 	if (ret)
 		return ret;
 	mdelay(10);
-	sunxi_drm_gpio_set_value(priv->enable_gpio, 1);
+
+	for (i = 0; i < GPIO_NUM_MAX; i++) {
+		sunxi_drm_gpio_set_value(priv->enable_gpio[i], 1);
+	}
+
+#endif
+	return 0;
+}
+static int pwm_backlight_disable(struct udevice *dev)
+{
+	struct pwm_backlight_priv *priv = dev_get_priv(dev);
+	int ret, i;
+#ifdef CONFIG_AW_DRM
+	if (priv->regulator)
+		sunxi_drm_power_disable(priv->regulator);
+
+	ret = pwm_disable(priv->sunxi_pwm);
+	if (ret)
+		return ret;
+	mdelay(10);
+
+	for (i = 0; i < GPIO_NUM_MAX; i++) {
+		sunxi_drm_gpio_set_value(priv->enable_gpio[i], 0);
+	}
 
 #endif
 	return 0;
@@ -90,8 +116,9 @@ static int pwm_backlight_ofdata_to_platdata(struct udevice *dev)
 {
 	struct pwm_backlight_priv *priv = dev_get_priv(dev);
 	struct ofnode_phandle_args args;
-	int index, ret, count, len;
+	int index, ret, count, len, i;
 	const u32 *cell;
+	char gpio_name[32] = {0};
 
 	debug("%s: start\n", __func__);
 #ifdef CONFIG_AW_DRM
@@ -99,7 +126,12 @@ static int pwm_backlight_ofdata_to_platdata(struct udevice *dev)
 	if (ret)
 		debug("%s: Cannot get power supply: ret=%d\n", __func__, ret);
 
-	priv->enable_gpio = sunxi_drm_gpio_request(dev, "enable-gpios");
+	priv->enable_gpio[0] = sunxi_drm_gpio_request(dev, "enable-gpios");
+
+	for (i = 1; i < GPIO_NUM_MAX; i++) {
+		snprintf(gpio_name, 32, "enable%d-gpios", i);
+		priv->enable_gpio[i] = sunxi_drm_gpio_request(dev, gpio_name);
+	}
 
 	ret = dev_read_phandle_with_args(dev, "pwms", "#pwm-cells", -1, 0,
 					 &args);
@@ -170,6 +202,7 @@ static int pwm_backlight_probe(struct udevice *dev)
 
 static const struct backlight_ops pwm_backlight_ops = {
 	.enable	= pwm_backlight_enable,
+	.disable = pwm_backlight_disable,
 };
 
 static const struct udevice_id pwm_backlight_ids[] = {

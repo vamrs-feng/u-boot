@@ -379,6 +379,7 @@ static int sunxi_de_reg_mem_init(struct sunxi_display_engine *de)
 {
 	if (de->match_data->update_mode == RCQ_MODE) {
 		de->reg.virt_addr = (unsigned long)memalign(4096, DE_BLOCK_SIZE);
+		memset((void *)de->reg.virt_addr, 0, DE_BLOCK_SIZE);
 		de->reg.phys_addr = de->reg.virt_addr;
 		de->reg.used_byte = 0;
 		return de->reg.virt_addr ? 0 : -ENOMEM;
@@ -932,6 +933,11 @@ static const struct de_match_data de350_data = {
 	.update_mode = RCQ_MODE,
 };
 
+static const struct de_match_data de352_data = {
+	.version = 0x352,
+	.update_mode = RCQ_MODE,
+};
+
 static const struct de_match_data de355_data = {
 	.version = 0x355,
 	.update_mode = RCQ_MODE,
@@ -952,6 +958,10 @@ static const struct udevice_id sunxi_de_match[] = {
 	{
 		.compatible = "allwinner,display-engine-v350",
 		.data = (ulong)&de350_data,
+	},
+	{
+		.compatible = "allwinner,display-engine-v352",
+		.data = (ulong)&de352_data,
 	},
 	{
 		.compatible = "allwinner,display-engine-v355",

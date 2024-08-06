@@ -73,6 +73,8 @@ static int sunxi_tcon_top_probe(struct udevice *dev)
 	}
 
 	tcon_top_set_reg_base(top->top_data->id, top->reg_base);
+
+	of_periph_clk_config_setup(ofnode_to_offset(dev_ofnode(dev)));
 	DRM_INFO("%s:end\n", __func__);
 	return 0;
 }
@@ -109,7 +111,13 @@ U_BOOT_DRIVER(tcon_top) = {
 
 static bool sunxi_tcon_top_node_is_tcon_top(ofnode node)
 {
-	return ofnode_device_is_compatible(node, sunxi_tcon_top_match->compatible);
+	int i = 0;
+
+	for (i = 0; sunxi_tcon_top_match[i].compatible; i++) {
+		if (ofnode_device_is_compatible(node, sunxi_tcon_top_match[i].compatible))
+			return true;
+	}
+	return false;
 }
 
 int sunxi_tcon_top_clk_enable(struct udevice *tcon_top)

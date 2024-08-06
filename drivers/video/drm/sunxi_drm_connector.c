@@ -37,6 +37,7 @@ int sunxi_drm_connector_bind(struct sunxi_drm_connector *conn, struct udevice *d
 	conn->data = data;
 	conn->type = type;
 	conn->drm = drm;
+	INIT_LIST_HEAD(&conn->probed_modes);
 	list_add_tail(&conn->head, &drm->connector_list);
 	++conn->drm->num_connector;
 
@@ -87,6 +88,29 @@ bool sunxi_drm_connector_detect(struct display_state *state)
 	}
 
 	return true;
+}
+static int sunxi_drm_connector_path_save_para(struct sunxi_drm_connector *conn,
+					      struct display_state *state)
+{
+	if (conn->funcs->save_kernel_para)
+		conn->funcs->save_kernel_para(conn, state);
+
+	return 0;
+}
+
+int sunxi_drm_connector_save_para(struct display_state *state)
+{
+	struct sunxi_drm_connector *conn;
+
+	conn = state->conn_state.connector;
+	sunxi_drm_connector_path_save_para(conn, state);
+
+	if (state->conn_state.secondary) {
+		conn = state->conn_state.secondary;
+		sunxi_drm_connector_path_save_para(conn, state);
+	}
+
+	return 0;
 }
 
 static int sunxi_drm_connector_path_pre_enable(struct sunxi_drm_connector *conn,
@@ -309,6 +333,32 @@ int sunxi_drm_connector_enable(struct display_state *state)
 
 	return 0;
 }
+static int sunxi_drm_connector_path_backlight(struct sunxi_drm_connector *conn,
+					   struct display_state *state, bool flag)
+{
+	if (conn->panel) {
+		if (flag)
+			sunxi_drm_panel_enable(conn->panel);
+		else
+			sunxi_drm_panel_disable(conn->panel);
+	}
+
+	return 0;
+}
+
+int sunxi_drm_connector_backlight(struct display_state *state, bool flag)
+{
+	struct sunxi_drm_connector *conn;
+
+	conn = state->conn_state.connector;
+	sunxi_drm_connector_path_backlight(conn, state, flag);
+	if (state->conn_state.secondary) {
+		conn = state->conn_state.secondary;
+		sunxi_drm_connector_path_backlight(conn, state, flag);
+	}
+
+	return 0;
+}
 
 static int sunxi_drm_connector_path_disable(struct sunxi_drm_connector *conn,
 					   struct display_state *state)
@@ -376,6 +426,8 @@ int drm_mode_to_sunxi_video_timings(struct drm_display_mode *mode,
 	timings->pixel_clk = mode->clock * 1000;
 	if (mode->clock < 27000)
 		timings->pixel_repeat = 1;
+	else
+		timings->pixel_repeat = (mode->flags & DRM_MODE_FLAG_DBLCLK) ? 0x1 : 0x0;
 
 	timings->b_interlace = mode->flags & DRM_MODE_FLAG_INTERLACE;
 	timings->x_res = mode->hdisplay;
@@ -398,5 +450,11 @@ int drm_mode_to_sunxi_video_timings(struct drm_display_mode *mode,
 	return 0;
 }
 
+
+void drm_mode_probed_add(struct sunxi_drm_connector *connector,
+			 struct drm_display_mode *mode)
+{
+	list_add_tail(&mode->head, &connector->probed_modes);
+}
 
 //End of File

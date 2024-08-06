@@ -29,6 +29,19 @@ union tcon_tv_setup_reg_t {
 		u32 tv1_out:1;
 		u32 res3:12;
 	} bits;
+	struct {
+		u32 res0:1;
+		u32 tv0_edp_hdmi_sel:1;
+		u32 res1:1;
+		u32 tv0_hdmiphy_ccu_sel:1;
+		u32 res2:1;
+		u32 tv1_edp_hdmi_sel:1;
+		u32 res3:1;
+		u32 tv1_hdmiphy_ccu_sel:1;
+		u32 res4:7;
+		u32 edp_i2s1_src_sel:1;
+		u32 res5:16;
+	} ver1_bits;
 };
 
 union tcon_de_perh_reg_t {

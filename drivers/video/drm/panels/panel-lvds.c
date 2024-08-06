@@ -38,12 +38,9 @@ struct panel_lvds {
 	struct videomode video_mode;
 	bool data_mirror;
 	struct {
-	//unsigned int prepare;
+		unsigned int power;
 		unsigned int enable;
-		unsigned int disable;
-//		unsigned int unprepare;
 		unsigned int reset;
-//		unsigned int init;
 	} delay;
 
 	struct udevice *backlight;
@@ -78,7 +75,8 @@ static int panel_lvds_prepare(struct sunxi_drm_panel *panel)
 					i, err);
 				return err;
 			}
-			mdelay(10);
+			if (lvds->delay.power)
+				mdelay(lvds->delay.power);
 		}
 	}
 
@@ -115,11 +113,10 @@ static int panel_lvds_enable(struct sunxi_drm_panel *panel)
 
 static int panel_lvds_disable(struct sunxi_drm_panel *panel)
 {
-//	struct panel_lvds *lvds = to_panel_lvds(panel);
+	struct panel_lvds *lvds = to_panel_lvds(panel);
 
-//FIXME
-//	if (lvds->backlight)
-//		backlight_set_brightness(lvds->backlight, 0);
+	if (lvds->backlight)
+		backlight_disable(lvds->backlight);
 
 	return 0;
 }
@@ -134,7 +131,7 @@ static int panel_lvds_unprepare(struct sunxi_drm_panel *panel)
 		if (lvds->enable_gpio[i - 1]) {
 			sunxi_drm_gpio_set_value(lvds->enable_gpio[i - 1], 0);
 			if (lvds->delay.enable)
-				panel_lvds_sleep(lvds->delay.disable);
+				panel_lvds_sleep(lvds->delay.enable);
 		}
 	}
 
@@ -145,8 +142,9 @@ static int panel_lvds_unprepare(struct sunxi_drm_panel *panel)
 
 	for (i = POWER_MAX; i > 0; i--) {
 		if (lvds->supply[i - 1]) {
-			//regulator_set_enable(lvds->supply[i - 1], false);
-			mdelay(10);
+			sunxi_drm_power_disable(lvds->supply[i]);
+			if (lvds->delay.power)
+				mdelay(lvds->delay.power);
 		}
 	}
 
@@ -165,7 +163,8 @@ static const struct sunxi_drm_panel_funcs panel_lvds_funcs = {
 static int panel_lvds_parse_dt(struct panel_lvds *lvds)
 {
 	char power_name[40] = {0}, gpio_name[40] = {0};
-	int ret = -1, i = 0;
+	int i = 0;
+	ulong ret;
 
 	ret = sunxi_of_get_panel_orientation(lvds->dev, &lvds->panel.orientation);
 
@@ -178,6 +177,9 @@ static int panel_lvds_parse_dt(struct panel_lvds *lvds)
 			pr_err("failed to request regulator(%s): %d\n", power_name, ret);
 		}
 	}
+	dev_read_u32(lvds->dev, "power-delay-ms", &lvds->delay.power);
+	dev_read_u32(lvds->dev, "enable-delay-ms", &lvds->delay.enable);
+	dev_read_u32(lvds->dev, "reset-delay-ms", &lvds->delay.reset);
 
 	/* Get GPIOs and backlight controller. */
 	for (i = 0; i < GPIO_MAX; i++) {

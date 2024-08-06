@@ -14,6 +14,9 @@
 #include <console.h>
 #include <asm/arch-sunxi/gpio.h>
 
+#if defined(CONFIG_AW_DRM)
+#include <drm/drm_logo.h>
+#endif
 /*
  * Global data (for the gd->bd)
  */
@@ -345,6 +348,9 @@ int sunxi_bat_low_vol_handle(void)
 #ifdef CONFIG_DISP2_SUNXI
 				disp_ioctl(NULL, onoff, (void *)arg);
 #endif
+#if defined(CONFIG_AW_DRM)
+				sunxi_backlight_ctrl("off");
+#endif
 			}
 		} else {
 			if (pmu_get_key_irq() > 0) {
@@ -358,6 +364,10 @@ int sunxi_bat_low_vol_handle(void)
 #ifdef CONFIG_DISP2_SUNXI
 				disp_ioctl(NULL, onoff, (void *)arg);
 #endif
+#if defined(CONFIG_AW_DRM)
+				sunxi_backlight_ctrl("on");
+				sunxi_show_bmp("bat\\bat0.bmp");
+#endif
 			}
 		}
 		if (!dcin_exist) {
@@ -367,6 +377,10 @@ int sunxi_bat_low_vol_handle(void)
 #endif
 #ifdef CONFIG_DISP2_SUNXI
 			disp_ioctl(NULL, onoff, (void *)arg);
+#endif
+#if defined(CONFIG_AW_DRM)
+			sunxi_backlight_ctrl("on");
+			sunxi_show_bmp("bat\\bat0.bmp");
 #endif
 			pr_force("bat_ratio:%d%\tbat_vol:%dmV\tsafe_vol:%dmV\n", bat_ratio, bat_vol, safe_vol);
 			tick_printf("battery ratio is low without dcin,to be shutdown\n");
@@ -428,6 +442,9 @@ int sunxi_bat_temp_handle(void)
 #ifdef CONFIG_DISP2_SUNXI
 				disp_ioctl(NULL, onoff, (void *)arg);
 #endif
+#if defined(CONFIG_AW_DRM)
+				sunxi_backlight_ctrl("off");
+#endif
 			}
 		} else {
 			if (pmu_get_key_irq() > 0) {
@@ -437,6 +454,9 @@ int sunxi_bat_temp_handle(void)
 				pr_force("safe_temp_H:%d\tsafe_temp_L:%d\temp:%d\n", safe_temp[0], safe_temp[1], temp);
 #ifdef CONFIG_DISP2_SUNXI
 				disp_ioctl(NULL, onoff, (void *)arg);
+#endif
+#if defined(CONFIG_AW_DRM)
+				sunxi_backlight_ctrl("on");
 #endif
 			}
 		}
@@ -448,6 +468,9 @@ int sunxi_bat_temp_handle(void)
 #ifdef CONFIG_DISP2_SUNXI
 				disp_ioctl(NULL, onoff, (void *)arg);
 #endif
+#if defined(CONFIG_AW_DRM)
+				sunxi_backlight_ctrl("on");
+#endif
 			mdelay(3000);
 			sunxi_board_shutdown_charge();
 		}
@@ -458,6 +481,10 @@ int sunxi_bat_temp_handle(void)
 	}
 #if defined(CONFIG_EINK200_SUNXI) || defined(CONFIG_CMD_SUNXI_BMP)
 	sunxi_bmp_display("bat\\bat_blank.bmp");
+#endif
+#if defined(CONFIG_AW_DRM)
+	sunxi_backlight_ctrl("on");
+	sunxi_show_bmp("bat\\bat_blank.bmp");
 #endif
 	return 0;
 }
@@ -650,6 +677,9 @@ int axp_battery_status_handle(void)
 #if defined(CONFIG_EINK200_SUNXI) || defined(CONFIG_CMD_SUNXI_BMP)
 			sunxi_bmp_display("bat\\bat_htmp.bmp");
 #endif
+#if defined(CONFIG_AW_DRM)
+			sunxi_show_bmp("bat\\bat_htmp.bmp");
+#endif
 			tick_printf("battery temp (%d) is too high", temp);
 			if (ntc_status == 1) {
 				tick_printf(" , to be shutdown\n");
@@ -662,6 +692,9 @@ int axp_battery_status_handle(void)
 		} else if (temp <= safe_temp[1]) {
 #if defined(CONFIG_EINK200_SUNXI) || defined(CONFIG_CMD_SUNXI_BMP)
 			sunxi_bmp_display("bat\\bat_ltmp.bmp");
+#endif
+#if defined(CONFIG_AW_DRM)
+			sunxi_show_bmp("bat\\bat_ltmp.bmp");
 #endif
 			tick_printf("battery temp (%d) is too low", temp);
 			if (ntc_status == 1) {
@@ -685,6 +718,10 @@ int axp_battery_status_handle(void)
 			if (bmp_type)
 				sunxi_bmp_display("bat\\bat0.bmp");
 #endif
+#if defined(CONFIG_AW_DRM)
+			if (bmp_type)
+				sunxi_show_bmp("bat\\bat0.bmp");
+#endif
 #if 0
 			tick_printf("battery ratio is low with dcin,to be shutdown\n");
 			mdelay(3000);
@@ -699,10 +736,16 @@ int axp_battery_status_handle(void)
 #if defined(CONFIG_EINK200_SUNXI) || defined(CONFIG_CMD_SUNXI_BMP)
 			sunxi_bmp_display("bat\\battery_charge.bmp");
 #endif
+#if defined(CONFIG_AW_DRM)
+			sunxi_show_bmp("bat\\battery_charge.bmp");
+#endif
 		}
 	} else if ((battery_status == BATTERY_RATIO_TOO_LOW_WITHOUT_DCIN) || (battery_status == BATTERY_VOL_TOO_LOW)) {
 #if defined(CONFIG_EINK200_SUNXI) || defined(CONFIG_CMD_SUNXI_BMP)
 		sunxi_bmp_display("bat\\bat0.bmp");
+#endif
+#if defined(CONFIG_AW_DRM)
+		sunxi_show_bmp("bat\\bat0.bmp");
 #endif
 		tick_printf("battery ratio or vol is low ,to be shutdown\n");
 		mdelay(3000);

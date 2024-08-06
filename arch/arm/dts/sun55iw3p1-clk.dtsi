@@ -424,6 +424,8 @@ clocks {
 			#clock-cells = <0>;
 			compatible = "allwinner,periph-clock";
 			clock-output-names = "edp";
+			assigned-clocks = <&clk_edp>;
+			assigned-clock-parents = <&clk_pll_video1x4>;
 		};
 
 		clk_edp_24m: edp_24m {

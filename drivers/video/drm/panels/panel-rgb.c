@@ -37,19 +37,16 @@ struct panel_rgb {
 	struct videomode video_mode;
 	bool data_mirror;
 	struct {
-	//unsigned int prepare;
+		unsigned int power;
 		unsigned int enable;
-		unsigned int disable;
-//		unsigned int unprepare;
 		unsigned int reset;
-//		unsigned int init;
 	} delay;
 
 	struct udevice *backlight;
-	struct udevice *supply[POWER_MAX];
+	uint32_t supply[POWER_MAX];
 
-	struct gpio_desc *enable_gpio[GPIO_MAX];
-	struct gpio_desc *reset_gpio;
+	ulong enable_gpio[GPIO_MAX];
+	ulong reset_gpio;
 };
 
 
@@ -66,19 +63,20 @@ static int panel_rgb_prepare(struct sunxi_drm_panel *panel)
 
 	for (i = 0; i < POWER_MAX; i++) {
 		if (rgb->supply[i]) {
-			err = regulator_set_enable(rgb->supply[i], true);
+			err = sunxi_drm_power_enable(rgb->supply[i]);
 			if (err < 0) {
 				DRM_ERROR("failed to enable supply%d: %d\n",
 					i, err);
 				return err;
 			}
-			mdelay(10);
+			if (rgb->delay.power)
+				mdelay(rgb->delay.power);
 		}
 	}
 
 	for (i = 0; i < GPIO_MAX; i++) {
 		if (rgb->enable_gpio[i]) {
-			dm_gpio_set_value(rgb->enable_gpio[i], 1);
+			sunxi_drm_gpio_set_value(rgb->enable_gpio[i], 1);
 
 			if (rgb->delay.enable)
 				mdelay(rgb->delay.enable);
@@ -86,7 +84,7 @@ static int panel_rgb_prepare(struct sunxi_drm_panel *panel)
 	}
 
 	if (rgb->reset_gpio)
-		dm_gpio_set_value(rgb->reset_gpio, 1);
+		sunxi_drm_gpio_set_value(rgb->reset_gpio, 1);
 	if (rgb->delay.reset)
 		mdelay(rgb->delay.reset);
 
@@ -109,10 +107,11 @@ static int panel_rgb_enable(struct sunxi_drm_panel *panel)
 
 static int panel_rgb_disable(struct sunxi_drm_panel *panel)
 {
+
 	struct panel_rgb *rgb = to_panel_rgb(panel);
 
 	if (rgb->backlight)
-		backlight_set_brightness(rgb->backlight, 0);
+		backlight_disable(rgb->backlight);
 
 	return 0;
 }
@@ -122,24 +121,24 @@ static int panel_rgb_unprepare(struct sunxi_drm_panel *panel)
 	struct panel_rgb *rgb = to_panel_rgb(panel);
 	int i;
 
-
 	for (i = GPIO_MAX; i > 0; i--) {
 		if (rgb->enable_gpio[i - 1]) {
-			dm_gpio_set_value(rgb->enable_gpio[i - 1], 0);
+			sunxi_drm_gpio_set_value(rgb->enable_gpio[i - 1], 0);
 			if (rgb->delay.enable)
-				mdelay(rgb->delay.disable);
+				mdelay(rgb->delay.enable);
 		}
 	}
 
 	if (rgb->reset_gpio)
-		dm_gpio_set_value(rgb->reset_gpio, 0);
+		sunxi_drm_gpio_set_value(rgb->reset_gpio, 0);
 	if (rgb->delay.reset)
 		mdelay(rgb->delay.reset);
 
 	for (i = POWER_MAX; i > 0; i--) {
 		if (rgb->supply[i - 1]) {
-			regulator_set_enable(rgb->supply[i - 1], false);
-			mdelay(10);
+			sunxi_drm_power_disable(rgb->supply[i - 1]);
+			if (rgb->delay.power)
+				mdelay(rgb->delay.power);
 		}
 	}
 
@@ -158,42 +157,41 @@ static const struct sunxi_drm_panel_funcs panel_rgb_funcs = {
 static int panel_rgb_parse_dt(struct panel_rgb *rgb)
 {
 	char power_name[40] = {0}, gpio_name[40] = {0};
-	int ret = -1, i = 0;
-
-	for (i = 0; i < GPIO_MAX; ++i) {
-		rgb->enable_gpio[i] =
-			kmalloc(sizeof(struct gpio_desc), __GFP_ZERO);
-	}
-	rgb->reset_gpio = kmalloc(sizeof(struct gpio_desc), __GFP_ZERO);
+	int i = 0;
+	ulong ret;
 
 	ret = sunxi_of_get_panel_orientation(rgb->dev, &rgb->panel.orientation);
 
 	for (i = 0; i < POWER_MAX; i++) {
+		rgb->supply[i] = 0;
 		snprintf(power_name, 40, "power%d-supply", i);
 
-		ret = uclass_get_device_by_phandle(UCLASS_REGULATOR, rgb->dev,
-						   power_name, &rgb->supply[i]);
-		if (!rgb->supply[i]) {
+		ret = dev_read_u32(rgb->dev, power_name, &rgb->supply[i]);
+		if (ret) {
 			pr_err("failed to request regulator(%s): %d\n", power_name, ret);
 		}
 	}
 
+	dev_read_u32(rgb->dev, "power-delay-ms", &rgb->delay.power);
+	dev_read_u32(rgb->dev, "enable-delay-ms", &rgb->delay.enable);
+	dev_read_u32(rgb->dev, "reset-delay-ms", &rgb->delay.reset);
 	/* Get GPIOs and backlight controller. */
 	for (i = 0; i < GPIO_MAX; i++) {
 		snprintf(gpio_name, 40, "enable%d-gpios", i);
 
-		ret = gpio_request_by_name(rgb->dev, gpio_name, 0,
-					   rgb->enable_gpio[i], GPIOD_IS_OUT);
-		if (!rgb->enable_gpio[i]) {
+		ret = sunxi_drm_gpio_request(rgb->dev, gpio_name);
+		if (ret < 0) {
 			pr_err("failed to request %s GPIO: %d\n", gpio_name, ret);
-		}
+		} else
+			rgb->enable_gpio[i] = ret;
 	}
 
-	ret = gpio_request_by_name(rgb->dev, "reset-gpios", 0,
-				   rgb->reset_gpio, GPIOD_IS_OUT);
-	if (!rgb->reset_gpio) {
+	snprintf(gpio_name, 40, "reset-gpios");
+	ret = sunxi_drm_gpio_request(rgb->dev, gpio_name);
+	if (ret < 0) {
 		pr_err("failed to request %s GPIO: %d\n", "reset", ret);
-	}
+	} else
+		rgb->reset_gpio = ret;
 
 	return 0;
 

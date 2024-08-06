@@ -27,13 +27,14 @@
 #include <command.h>
 #include <drm/drm_modes.h>
 #include <drm/drm_connector.h>
+#include <drm/drm_logo.h>
 #include <video_bridge.h>
 #include <linux/delay.h>
 #include <splash.h>
 #include <asm/cache.h>
 #include <lcd.h>
 #include <rand.h>
-
+#include <mapmem.h>
 #include "sunxi_device/sunxi_tcon.h"
 #include "sunxi_drm_panel.h"
 #include "sunxi_drm_connector.h"
@@ -73,6 +74,8 @@ int sunxi_drm_kernel_para_flush(void)
 	int i = 0;
 	int ret;
 
+	if (!drm)
+		return -1;
 	sunxi_drm_for_each_display(state, drm) {
 		if (state->is_enable) {
 			fb = drm_framebuffer_lookup(drm, state->fb_id);
@@ -103,6 +106,7 @@ int sunxi_drm_kernel_para_flush(void)
 #undef fdt_append
 
 			i++;
+			sunxi_drm_connector_save_para(state);
 		}
 	}
 	return 0;
@@ -598,6 +602,7 @@ static int sunxi_drm_drv_probe(struct udevice *dev)
 		cmd2.offsets[0] = 0;
 		tmp_s->fb_id = drm_framebuffer_alloc(drm, &cmd2);
 		fb = drm_framebuffer_lookup(drm, tmp_s->fb_id);
+
 		if (!uc_priv->xsize || !uc_priv->ysize) {
 			uc_priv->xsize = tmp_s->conn_state.mode.hdisplay;
 			uc_priv->ysize = tmp_s->conn_state.mode.vdisplay;
@@ -888,7 +893,6 @@ static int display_disable(struct display_state *state)
 	return 0;
 }
 
-
 static int display_get_timing_from_dts(struct sunxi_drm_panel *panel,
 				       struct drm_display_mode *mode,
 				       u32 *bus_flags)
@@ -944,14 +948,6 @@ static int display_get_timing(struct display_state *state)
 
 	return -ENODEV;
 }
-
-
-static int display_get_edid_mode(struct display_state *state)
-{
-	//TODO:decode edid and convert to drm display mode
-	return 0;
-}
-
 
 static int display_mode_fixup(struct display_state *state)
 {
@@ -1041,11 +1037,9 @@ static int display_init(struct display_state *state)
 		ret = display_get_timing(state);
 		if (!ret)
 			conn_state->info.bpc = conn->panel->bpc;
-		if (ret < 0 && conn->funcs->get_edid) {
+		if (ret < 0 && conn->funcs->get_edid_timing) {
 			sunxi_drm_panel_prepare(conn->panel);
-			ret = conn->funcs->get_edid(conn, state);
-			if (!ret)
-				display_get_edid_mode(state);
+			ret = conn->funcs->get_edid_timing(conn, state);
 		}
 	} else if (conn->bridge) {
 /*		ret = video_bridge_read_edid(conn->bridge->dev,
@@ -1058,10 +1052,8 @@ static int display_init(struct display_state *state)
 		DRM_ERROR("NOT support bridge yet\n");
 	} else if (conn->funcs->get_timing) {
 		ret = conn->funcs->get_timing(conn, state);
-	} else if (conn->funcs->get_edid) {
-		ret = conn->funcs->get_edid(conn, state);
-		if (!ret)
-			display_get_edid_mode(state);
+	} else if (conn->funcs->get_edid_timing) {
+		ret = conn->funcs->get_edid_timing(conn, state);
 	}
 
 	if (!ret && conn_state->secondary) {
@@ -1132,7 +1124,13 @@ deinit:
 
 static int display_logo(struct display_state *state)
 {
-	int ret = 0;
+	struct sunxi_drm_device *drm = state->drm;
+	struct video_priv *priv = dev_get_uclass_priv(drm->dev);
+	struct video_uc_platdata *plat = dev_get_uclass_platdata(drm->dev);
+	struct bmp_image *bmp = NULL;
+	struct drm_framebuffer *fb = NULL;
+	int ret = 0, left_offset = 0, upper_offset = 0;
+
 	if (!state->is_init)
 		return -ENODEV;
 
@@ -1153,8 +1151,35 @@ static int display_logo(struct display_state *state)
 		return -EINVAL;
 	}
 
-	return bmp_display((ulong)state->logo->file_addr, 0, 0);;
+	fb = drm_framebuffer_lookup(state->drm, state->fb_id);
+
+	if (fb) {
+		memset((void *)fb->dma_addr, 0, fb->buf_size);
+		flush_dcache_range((ulong)fb->dma_addr,
+				   ALIGN((ulong)(fb->dma_addr + fb->buf_size),
+					 CONFIG_SYS_CACHELINE_SIZE));
+	}
+
+	// FIXME: dual display, modify it if some new demands need later
+	if (plat->base != fb->dma_addr) {
+		plat->base = fb->dma_addr;
+		plat->size = fb->buf_size;
+		priv->xsize = state->conn_state.mode.hdisplay;
+		priv->ysize = state->conn_state.mode.vdisplay;
+		priv->fb = map_sysmem(plat->base, plat->size);
+		priv->line_length = priv->xsize * VNBYTES(priv->bpix);
+		priv->fb_size = priv->line_length * priv->ysize;
+	}
+
+	bmp = map_sysmem((ulong)state->logo->file_addr, 0);
+	if (fb->width > bmp->header.width)
+		left_offset = ((fb->width - bmp->header.width) >> 1);
+	if (fb->height > bmp->header.height)
+		upper_offset = ((fb->height - bmp->header.height) >> 1);
+
+	return bmp_display((ulong)state->logo->file_addr, left_offset, upper_offset);
 }
+
 
 
 int sunxi_show_bmp(char *bmp)
@@ -1184,6 +1209,33 @@ int sunxi_show_bmp(char *bmp)
 	return ret;
 }
 
+int sunxi_backlight_ctrl(char *reg)
+{
+	struct display_state *state = NULL;
+	int i = 0;
+	struct sunxi_drm_device *drm = sunxi_drm_device_get();
+	bool flag;
+
+	if (!drm || list_empty(&drm->display_list)) {
+		DRM_ERROR("Get sunxi drm device fail!\n");
+		return -1;
+	}
+
+	if (!strcmp(reg, "on"))
+		flag = true;
+	else if (!strcmp(reg, "off"))
+		flag = false;
+	else
+		return -1;
+
+	sunxi_drm_for_each_display(state, drm) {
+		if (state->is_enable)
+			sunxi_drm_connector_backlight(state, flag);
+		i++;
+	}
+
+	return 0;
+}
 
 int sunxi_show_logo(void)
 {
@@ -1212,6 +1264,29 @@ int sunxi_show_logo(void)
 	return ret;
 }
 
+struct drm_framebuffer *drm_fb_lock(void)
+{
+	int i = 0;
+	struct sunxi_drm_device *drm = sunxi_drm_device_get();
+	struct drm_framebuffer *fb = NULL;
+	struct display_state *state = NULL;
+
+	if (!drm || list_empty(&drm->display_list)) {
+		DRM_ERROR("Get sunxi drm device fail!\n");
+		return NULL;
+	}
+
+	sunxi_drm_for_each_display(state, drm) {
+		display_logo(state);
+		if (state->is_enable) {
+			fb = drm_framebuffer_lookup(drm, state->fb_id);
+			if (fb)
+				return fb;
+		}
+		i++;
+	}
+	return NULL;
+}
 
 static int do_sunxi_logo_show(struct cmd_tbl_s *cmdtp, int flag, int argc,
 			char *const argv[])
@@ -1224,6 +1299,16 @@ static int do_sunxi_logo_show(struct cmd_tbl_s *cmdtp, int flag, int argc,
 	return 0;
 }
 
+static int do_sunxi_backlight_ctrl(struct cmd_tbl_s *cmdtp, int flag, int argc,
+				char *const argv[])
+{
+	if (argc != 2)
+		return CMD_RET_USAGE;
+
+	sunxi_backlight_ctrl(argv[1]);
+
+	return 0;
+}
 static int do_sunxi_show_bmp(struct cmd_tbl_s *cmdtp, int flag, int argc,
 				char *const argv[])
 {
@@ -1338,6 +1423,11 @@ U_BOOT_CMD(
 	"    <bmp_name>"
 );
 
+U_BOOT_CMD(
+	sunxi_backlihgt, 2, 1, do_sunxi_backlight_ctrl,
+	"backlight ctrl",
+	"    off or on"
+);
 
 static char sunxi_drm_help_text[] =
 	"sunxi_drm dump - Print state and reg value\n"

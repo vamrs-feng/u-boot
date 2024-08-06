@@ -10,8 +10,8 @@
  * warranty of any kind, whether express or implied.
  */
 
-#ifndef _DISP_INCLUDE_H_
-#define _DISP_INCLUDE_H_
+#ifndef _DRM_INCLUDE_H_
+#define _DRM_INCLUDE_H_
 
 #include <common.h>
 #include <linux/types.h>

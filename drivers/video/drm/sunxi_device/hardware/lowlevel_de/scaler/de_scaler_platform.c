@@ -213,8 +213,73 @@ static struct de_version_scaler de201 = {
 	.scaler = de201_scalers,
 };
 
+static struct de_scaler_dsc de352_scalers[] = {
+	{
+		.name = "vch0_asu10",
+		.id = 0,
+		.type = DE_SCALER_TYPE_ASU,
+		.line_buffer_yuv = 4096,
+		.line_buffer_rgb = 2048,
+		.line_buffer_yuv_ed = 2048,
+	},
+	{
+		.name = "vch1_vsu8",
+		.id = 1,
+		.type = DE_SCALER_TYPE_VSU8,
+		.line_buffer_yuv = 2560,
+		.line_buffer_rgb = 2560,
+		.line_buffer_yuv_ed = 2560,
+	},
+	{
+		.name = "vch2_vsu8",
+		.id = 2,
+		.type = DE_SCALER_TYPE_VSU8,
+		.line_buffer_yuv = 2048,
+		.line_buffer_rgb = 2048,
+		.line_buffer_yuv_ed = 2048,
+	},
+	{
+		.name = "uch0_vsu8",
+		.id = 3,
+		.type = DE_SCALER_TYPE_VSU8,
+		.line_buffer_yuv = 2560,
+		.line_buffer_rgb = 2560,
+		.line_buffer_yuv_ed = 2560,
+	},
+	{
+		.name = "uch1_vsu8",
+		.id = 4,
+		.type = DE_SCALER_TYPE_VSU8,
+		.line_buffer_yuv = 2560,
+		.line_buffer_rgb = 2560,
+		.line_buffer_yuv_ed = 2560,
+	},
+	{
+		.name = "uch2_vsu8",
+		.id = 5,
+		.type = DE_SCALER_TYPE_VSU8,
+		.line_buffer_yuv = 2048,
+		.line_buffer_rgb = 2048,
+		.line_buffer_yuv_ed = 2048,
+	},
+	{
+		.name = "uch3_vsu8",
+		.id = 6,
+		.type = DE_SCALER_TYPE_VSU8,
+		.line_buffer_yuv = 2048,
+		.line_buffer_rgb = 2048,
+		.line_buffer_yuv_ed = 2048,
+	},
+};
+
+static struct de_version_scaler de352 = {
+	.version = 0x352,
+	.scaler_cnt = ARRAY_SIZE(de352_scalers),
+	.scaler = de352_scalers,
+};
+
 static struct de_version_scaler *de_version[] = {
-	&de350, &de355, &de210, &de201,
+	&de350, &de355, &de210, &de201, &de352,
 };
 
 struct de_scaler_dsc *get_scaler_dsc(const struct module_create_info *info)

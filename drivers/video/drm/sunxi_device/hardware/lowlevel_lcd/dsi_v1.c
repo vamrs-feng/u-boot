@@ -405,92 +405,11 @@ s32 dsi_clk_enable(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para, u32 en
 	return 0;
 }
 
-static s32 dsi_basic_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
+s32 dsi_basic_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
 {
-	printk("[lowlevel] x:%d, y:%d, vt:%d, vbp:%d, vspw:%d, ht:%d, hbp:%d, hspw:%d\n",
-		para->timings.x_res,
-		para->timings.y_res,
-		para->timings.ver_total_time,
-		para->timings.ver_back_porch,
-		para->timings.ver_sync_time,
-		para->timings.hor_total_time,
-		para->timings.hor_back_porch,
-		para->timings.hor_sync_time);
-	if (para->mode_flags & MIPI_DSI_MODE_COMMAND) {
-		dsi->reg->dsi_basic_ctl0.bits.ecc_en = 1;
-		dsi->reg->dsi_basic_ctl0.bits.crc_en = 1;
-		if (para->mode_flags & MIPI_DSI_MODE_NO_EOT_PACKET)
-			dsi->reg->dsi_basic_ctl0.bits.hs_eotp_en = 1;
-		dsi->reg->dsi_basic_ctl1.bits.dsi_mode = 0;
-		dsi->reg->dsi_trans_start.bits.trans_start_set = 10;
-		dsi->reg->dsi_trans_zero.bits.hs_zero_reduce_set = 0;
-	} else {
-		s32 start_delay = para->timings.ver_total_time - para->timings.y_res - 10;
-		u32 dsi_start_delay;
+	if (!para->lanes)
+		para->lanes = 4;
 
-		/*
-		 * put start_delay to tcon.
-		 * set ready sync early to dramfreq, so set start_delay 1
-		 */
-		start_delay = 1;
-
-		dsi_start_delay = start_delay;
-		if (dsi_start_delay > para->timings.ver_total_time)
-			dsi_start_delay -= para->timings.ver_total_time;
-		if (dsi_start_delay == 0)
-			dsi_start_delay = 1;
-
-		dsi->reg->dsi_basic_ctl0.bits.ecc_en = 1;
-		dsi->reg->dsi_basic_ctl0.bits.crc_en = 1;
-		if (para->mode_flags & MIPI_DSI_MODE_NO_EOT_PACKET)
-			dsi->reg->dsi_basic_ctl0.bits.hs_eotp_en = 1;
-		dsi->reg->dsi_basic_ctl1.bits.video_start_delay =
-		    dsi_start_delay;
-		dsi->reg->dsi_basic_ctl1.bits.video_precision_mode_align =
-		    1;
-		dsi->reg->dsi_basic_ctl1.bits.video_frame_start = 1;
-		dsi->reg->dsi_trans_start.bits.trans_start_set = 10;
-		dsi->reg->dsi_trans_zero.bits.hs_zero_reduce_set = 0;
-		dsi->reg->dsi_basic_ctl1.bits.dsi_mode = 1;
-
-		if (para->mode_flags & MIPI_DSI_SLAVE_MODE)
-			dsi->reg->dsi_basic_ctl1.bits.tri_delay = 48;
-
-		if (para->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) {
-			u32 line_num, edge0, edge1, sync_point = 40;
-
-			line_num =  para->timings.hor_total_time * dsi_pixel_bits[para->format]
-				/ (8 * para->lanes);
-			edge1 = sync_point + (para->timings.x_res + para->timings.hor_back_porch +
-					para->timings.hor_sync_time + 20) *
-					dsi_pixel_bits[para->format] / (8 * para->lanes);
-			edge1 = (edge1 > line_num) ? line_num : edge1;
-			edge0 = edge1 + (para->timings.x_res + 40) * para->dsi_div / 8;
-			edge0 = (edge0 > line_num) ? (edge0 - line_num) : 1;
-
-			dsi->reg->dsi_basic_ctl1.bits.tri_delay =
-				para->timings.hor_total_time / 10 * 2;
-			dsi->reg->dsi_burst_drq.bits.drq_edge0 = edge0;
-			dsi->reg->dsi_burst_drq.bits.drq_edge1 = edge1;
-			dsi->reg->dsi_tcon_drq.bits.drq_mode = 1;
-			dsi->reg->dsi_burst_line.bits.line_num = line_num;
-			dsi->reg->dsi_burst_line.bits.line_syncpoint = sync_point;
-			dsi->reg->dsi_basic_ctl.bits.video_mode_burst = 1;
-
-		} else {
-			if ((para->timings.hor_total_time - para->timings.x_res - para->timings.hor_back_porch)
-			    < 21) {
-				dsi->reg->dsi_tcon_drq.bits.drq_mode = 0;
-			} else {
-				dsi->reg->dsi_tcon_drq.bits.drq_set =
-				(para->timings.hor_total_time - para->timings.x_res -
-				 para->timings.hor_back_porch - para->timings.hor_sync_time -20)
-				    * dsi_pixel_bits[para->format] /
-				    (8 * 4);
-				dsi->reg->dsi_tcon_drq.bits.drq_mode = 1;
-			}
-		}
-	}
 	dsi->reg->dsi_inst_func[DSI_INST_ID_LP11].bits.instru_mode =
 	    DSI_INST_MODE_STOP;
 	dsi->reg->dsi_inst_func[DSI_INST_ID_LP11].bits.lane_cen = 1;
@@ -593,6 +512,18 @@ static s32 dsi_basic_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
 		| 3 << (4 * (DSI_INST_ID_DLY_1-8));
 	dsi->reg->dsi_inst_loop_num.bits.loop_n0 = 50 - 1;
 	dsi->reg->dsi_inst_loop_num2.bits.loop_n0 = 50 - 1;
+
+	dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_point =
+	    DSI_INST_ID_NOP;
+	dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_to =
+	    DSI_INST_ID_HSCEXIT;
+	dsi->reg->dsi_debug_data.bits.test_data = 0xff;
+	dsi->reg->dsi_gctl.bits.dsi_en = 1;
+	return 0;
+}
+
+s32 dsi_packet_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
+{
 	if (para->mode_flags & MIPI_DSI_MODE_COMMAND) {
 		dsi->reg->dsi_inst_loop_num.bits.loop_n1 = 1 - 1;
 		dsi->reg->dsi_inst_loop_num2.bits.loop_n1 = 1 - 1;
@@ -611,7 +542,6 @@ static s32 dsi_basic_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
 		dsi->reg->dsi_inst_loop_num.bits.loop_n1 = 50 - 1;
 		dsi->reg->dsi_inst_loop_num2.bits.loop_n1 = 50 - 1;
 	}
-
 	if (para->mode_flags & MIPI_DSI_MODE_COMMAND) {
 		dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_en = 1;
 		dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_num =
@@ -621,17 +551,82 @@ static s32 dsi_basic_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
 		dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_num = 1;
 	}
 
-	dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_point =
-	    DSI_INST_ID_NOP;
-	dsi->reg->dsi_inst_jump_cfg[0].bits.jump_cfg_to =
-	    DSI_INST_ID_HSCEXIT;
-	dsi->reg->dsi_debug_data.bits.test_data = 0xff;
-	dsi->reg->dsi_gctl.bits.dsi_en = 1;
-	return 0;
-}
+	if (para->mode_flags & MIPI_DSI_MODE_COMMAND) {
+		dsi->reg->dsi_basic_ctl0.bits.ecc_en = 1;
+		dsi->reg->dsi_basic_ctl0.bits.crc_en = 1;
+		if (para->mode_flags & MIPI_DSI_MODE_NO_EOT_PACKET)
+			dsi->reg->dsi_basic_ctl0.bits.hs_eotp_en = 1;
+		dsi->reg->dsi_basic_ctl1.bits.dsi_mode = 0;
+		dsi->reg->dsi_trans_start.bits.trans_start_set = 10;
+		dsi->reg->dsi_trans_zero.bits.hs_zero_reduce_set = 0;
+	} else {
+		s32 start_delay = para->timings.ver_total_time - para->timings.y_res - 10;
+		u32 dsi_start_delay;
 
-static s32 dsi_packet_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
-{
+		/*
+		 * put start_delay to tcon.
+		 * set ready sync early to dramfreq, so set start_delay 1
+		 */
+		start_delay = 1;
+
+		dsi_start_delay = start_delay;
+		if (dsi_start_delay > para->timings.ver_total_time)
+			dsi_start_delay -= para->timings.ver_total_time;
+		if (dsi_start_delay == 0)
+			dsi_start_delay = 1;
+
+		dsi->reg->dsi_basic_ctl0.bits.ecc_en = 1;
+		dsi->reg->dsi_basic_ctl0.bits.crc_en = 1;
+		if (para->mode_flags & MIPI_DSI_MODE_NO_EOT_PACKET)
+			dsi->reg->dsi_basic_ctl0.bits.hs_eotp_en = 1;
+		dsi->reg->dsi_basic_ctl1.bits.video_start_delay =
+		    dsi_start_delay;
+		dsi->reg->dsi_basic_ctl1.bits.video_precision_mode_align =
+		    1;
+		dsi->reg->dsi_basic_ctl1.bits.video_frame_start = 1;
+		dsi->reg->dsi_trans_start.bits.trans_start_set = 10;
+		dsi->reg->dsi_trans_zero.bits.hs_zero_reduce_set = 0;
+		dsi->reg->dsi_basic_ctl1.bits.dsi_mode = 1;
+
+		if (para->mode_flags & MIPI_DSI_SLAVE_MODE)
+			dsi->reg->dsi_basic_ctl1.bits.tri_delay = 48;
+
+		if (para->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) {
+			u32 line_num, edge0, edge1, sync_point = 40;
+
+			line_num =  para->timings.hor_total_time * dsi_pixel_bits[para->format]
+				/ (8 * para->lanes);
+			edge1 = sync_point + (para->timings.x_res + para->timings.hor_back_porch +
+					para->timings.hor_sync_time + 20) *
+					dsi_pixel_bits[para->format] / (8 * para->lanes);
+			edge1 = (edge1 > line_num) ? line_num : edge1;
+			edge0 = edge1 + (para->timings.x_res + 40) * para->dsi_div / 8;
+			edge0 = (edge0 > line_num) ? (edge0 - line_num) : 1;
+
+			dsi->reg->dsi_basic_ctl1.bits.tri_delay =
+				para->timings.hor_total_time / 10 * 2;
+			dsi->reg->dsi_burst_drq.bits.drq_edge0 = edge0;
+			dsi->reg->dsi_burst_drq.bits.drq_edge1 = edge1;
+			dsi->reg->dsi_tcon_drq.bits.drq_mode = 1;
+			dsi->reg->dsi_burst_line.bits.line_num = line_num;
+			dsi->reg->dsi_burst_line.bits.line_syncpoint = sync_point;
+			dsi->reg->dsi_basic_ctl.bits.video_mode_burst = 1;
+
+		} else {
+			if ((para->timings.hor_total_time - para->timings.x_res
+						- para->timings.hor_back_porch)
+			    < 21) {
+				dsi->reg->dsi_tcon_drq.bits.drq_mode = 0;
+			} else {
+				dsi->reg->dsi_tcon_drq.bits.drq_set =
+				(para->timings.hor_total_time - para->timings.x_res -
+				 para->timings.hor_back_porch - para->timings.hor_sync_time -20)
+				    * dsi_pixel_bits[para->format] /
+				    (8 * 4);
+				dsi->reg->dsi_tcon_drq.bits.drq_mode = 1;
+			}
+		}
+	}
 	if (para->mode_flags & MIPI_DSI_MODE_COMMAND) {
 		dsi->reg->dsi_pixel_ctl0.bits.pd_plug_dis = 0;
 		//dsi->reg->dsi_pixel_ph.bits.vc = panel->lcd_dsi_vc;
@@ -837,13 +832,6 @@ static s32 dsi_packet_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para)
 		dsi->reg->dsi_blk_vblk1.bits.pf =
 		    dsi_crc_pro_pd_repeat(0, dsi_vblk);
 	}
-	return 0;
-}
-
-s32 dsi_cfg(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *dsi_para)
-{
-	dsi_basic_cfg(dsi, dsi_para);
-	dsi_packet_cfg(dsi, dsi_para);
 	return 0;
 }
 

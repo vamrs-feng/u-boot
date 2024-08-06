@@ -802,6 +802,8 @@ clocks {
 		clk_mipi_dsi0: mipi_dsi0 {
 			#clock-cells = <0>;
 			compatible = "allwinner,periph-clock";
+			assigned-clock-parents = <&clk_pll_periph0_150m>;
+			assigned-clock-rates = <150000000>;
 			clock-output-names = "mipi_dsi0";
 			assigned-clocks = <&clk_mipi_dsi0>;
 			assigned-clock-parents = <&clk_pll_periph0_150m>;
@@ -810,6 +812,8 @@ clocks {
 		clk_mipi_dsi1: mipi_dsi1 {
 			#clock-cells = <0>;
 			compatible = "allwinner,periph-clock";
+			assigned-clock-parents = <&clk_pll_periph0_150m>;
+			assigned-clock-rates = <150000000>;
 			clock-output-names = "mipi_dsi1";
 			assigned-clocks = <&clk_mipi_dsi1>;
 			assigned-clock-parents = <&clk_pll_periph0_150m>;

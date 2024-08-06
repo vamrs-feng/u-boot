@@ -257,6 +257,29 @@ ulong sunxi_drm_gpio_request(struct udevice *dev, char *sub_name)
 	return 0;
 }
 
+ulong sunxi_drm_gpio_node_request(ofnode node, char *sub_name)
+{
+	int ret = 0;
+	user_gpio_set_t  gpio_info;
+	user_gpio_set_t  tmp;
+
+	ret = fdt_get_one_gpio_by_offset(ofnode_to_offset(node), sub_name, &tmp);
+
+	if (ret > 0) {
+		memcpy(&gpio_info, &tmp, sizeof(tmp));
+		memcpy(gpio_info.gpio_name, sub_name, strlen(sub_name)+1);
+		if (ret == 4) {
+			//<&pio PH 16 GPIO_ACTIVE_HIGH>;
+			//rearrange and fix
+			gpio_info.mul_sel = 1;//output
+			gpio_info.drv_level = 1;
+			gpio_info.pull = 0;
+			gpio_info.data = tmp.mul_sel;
+		}
+		return sunxi_gpio_request(&gpio_info, 1);
+	}
+	return 0;
+}
 int sunxi_drm_gpio_set_value(ulong p_handler, u32 value)
 {
 	return gpio_write_one_pin_value(p_handler, value, NULL);
@@ -293,5 +316,38 @@ int sunxi_drm_power_enable(uint32_t phandle)
 
 	return 0;
 }
+
+int sunxi_drm_power_disable(uint32_t phandle)
+{
+	int ret = 0, offset;
+	char *name;
+
+	offset = fdt_node_offset_by_phandle(working_fdt, phandle);
+	if (offset <= 0) {
+		DRM_ERROR("invalid power phandle, ret=%d\n", offset);
+		return -1;
+	}
+	name = (char *)fdt_get_name(working_fdt, offset, NULL);
+	if (!name) {
+		DRM_ERROR("invalid power phandle, name not found\n");
+		return -1;
+	}
+#if defined(CONFIG_SUNXI_PMU)
+	/*TODO:bmu*/
+	ret = pmu_set_voltage(name, 0, 0);
+	if (!ret)
+		DRM_ERROR("disable power %s, ret=%d\n", name, ret);
+#ifdef CONFIG_SUNXI_PMU_EXT
+	ret = pmu_ext_set_voltage(name, 0, 0);
+	if (!ret)
+		DRM_ERROR("disable power_ext %s, ret=%d\n", name, ret);
+#endif
+#else
+	__wrn("SUNXI_POWER is not enabled!\n");
+#endif
+
+	return 0;
+}
+
 
 //End of File

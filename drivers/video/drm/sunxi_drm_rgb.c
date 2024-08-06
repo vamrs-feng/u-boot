@@ -17,6 +17,7 @@
 
 #include <common.h>
 #include <dm.h>
+#include <sys_config.h>
 #include <dm/pinctrl.h>
 #include <asm/arch/gic.h>
 #include <drm/drm_modes.h>
@@ -30,6 +31,9 @@
 #include "sunxi_drm_connector.h"
 #include "sunxi_drm_drv.h"
 
+#if IS_ENABLED(CONFIG_MACH_SUN55IW6)
+#define RGB_DISPLL_CLK
+#endif
 struct rgb_data {
 	int id;
 };
@@ -96,6 +100,8 @@ static int sunxi_rgb_connector_init(struct sunxi_drm_connector *conn, struct dis
 static int sunxi_rgb_connector_prepare(struct sunxi_drm_connector *conn,
 					  struct display_state *state)
 {
+	int ret = -1;
+	char tmp[128] = {0};
 	struct sunxi_drm_rgb *rgb = dev_get_priv(conn->dev);
 	struct crtc_state *scrtc_state = &state->crtc_state;
 	struct disp_output_config disp_cfg;
@@ -108,6 +114,11 @@ static int sunxi_rgb_connector_prepare(struct sunxi_drm_connector *conn,
 	disp_cfg.irq_handler = scrtc_state->crtc_irq_handler;
 	disp_cfg.irq_data = state;
 	disp_cfg.tcon_lcd_div = 7;
+#ifdef RGB_DISPLL_CLK
+	disp_cfg.displl_clk = true;
+#else
+	disp_cfg.displl_clk = false;
+#endif
 
 	drm_mode_to_sunxi_video_timings(&rgb->mode, &rgb->rgb_para.timings);
 	memcpy(&disp_cfg.rgb_para, &rgb->rgb_para,
@@ -116,6 +127,11 @@ static int sunxi_rgb_connector_prepare(struct sunxi_drm_connector *conn,
 	sunxi_tcon_mode_init(rgb->tcon_dev, &disp_cfg);
 	rgb->phy_opts.mipi_dphy.hs_clk_rate = rgb->rgb_para.timings.pixel_clk * disp_cfg.tcon_lcd_div;
 
+	ret = fdt_get_path(working_fdt, ofnode_to_offset(dev_ofnode(rgb->dev)), tmp, sizeof(tmp));
+	ret = fdt_set_all_pin(tmp, "pinctrl-0");
+	if (ret < 0) {
+		DRM_ERROR("%s:%d:fdt_set_all_pin fail!:%d\n", __func__, __LINE__, ret);
+	}
 	pinctrl_select_state(rgb->dev, "active");
 
 	return 0;
@@ -186,6 +202,8 @@ static int sunxi_drm_rgb_probe(struct udevice *dev)
 
 	sunxi_drm_connector_bind(&rgb->connector, dev, rgb->rgb_id, &rgb_connector_funcs,
 				NULL, DRM_MODE_CONNECTOR_DPI);
+
+	of_periph_clk_config_setup(ofnode_to_offset(dev_ofnode(dev)));
 	rgb->bound = true;
 
 	return 0;

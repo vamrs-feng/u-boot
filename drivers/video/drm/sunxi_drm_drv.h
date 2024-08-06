@@ -17,6 +17,7 @@
 #ifndef _SUNXI_DRM_DRV_H
 #define _SUNXI_DRM_DRV_H
 
+#include <common.h>
 #include <drm/drm_connector.h>
 #include <dm/ofnode.h>
 #include <asm/arch/gic.h>

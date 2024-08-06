@@ -13,7 +13,6 @@
 #ifndef __TCON_TOP_H_
 #define __TCON_TOP_H_
 
-
 enum __tv_set_t {
 	TV_TO_GPIO = 1,
 	LCD_TO_GPIO = 0,
@@ -28,6 +27,7 @@ s32 tcon1_out_to_gpio(u32 sel);
 s32 tcon1_tv_clk_enable(u32 sel, u32 en);
 s32 tcon1_edp_clk_enable(u32 sel, u32 en);
 s32 tcon1_hdmi_clk_enable(u32 sel, u32 en);
+s32 tcon_hdmi_clk_src_sel(u32 sel, u32 src);
 s32 tcon_lcd_dsi_clk_enable(u32 sel, u32 en);
 s32 tcon_de_attach(u32 tcon_index, u32 de_index);
 s32 edp_de_attach(u32 edp_index, u32 de_index);

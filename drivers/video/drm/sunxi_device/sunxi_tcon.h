@@ -38,6 +38,7 @@ struct disp_output_config {
 	unsigned int de_id;
 	bool sw_enable;
 	bool slave_dsi;
+	bool displl_clk;
 	unsigned int tcon_lcd_div;
 	struct disp_dsi_para dsi_para;
 	struct disp_lvds_para lvds_para;
@@ -75,6 +76,8 @@ int sunxi_tcon_show_pattern(struct udevice *tcon_dev, int pattern);
 int sunxi_tcon_pattern_get(struct udevice *tcon_dev);
 int sunxi_tcon_of_get_id(struct udevice *tcon_dev);
 void sunxi_tcon_enable_vblank(struct udevice *tcon_dev, bool enable);
+int sunxi_tcon_hdmi_open(struct udevice *dev);
+int sunxi_tcon_hdmi_src(struct udevice *dev, u8 src);
 int sunxi_tcon_mode_init(struct udevice *tcon_dev, struct disp_output_config *disp_cfg);
 int sunxi_tcon_mode_exit(struct udevice *tcon_dev);
 int sunxi_tcon_enable_output(struct udevice *dev);

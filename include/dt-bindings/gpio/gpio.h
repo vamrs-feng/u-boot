@@ -50,6 +50,5 @@
 #define  PN  13
 #define  PO  14
 #define  PP  15
-#define  default 0xffffffff
 
 #endif

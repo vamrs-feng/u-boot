@@ -242,9 +242,96 @@ static struct de_version_bld de201 = {
 	.bld = &de201_blds[0],
 };
 
+/* 2 bld, 3 mode */
+static const struct de_bld_port_mux_mode de352_modes[2][3] = {
+	{
+		{
+			.name = "v0v1v2u0u1u2",
+			.mode_id = 0,
+			.channel_cnt = 6,
+			.channel_id[0] = VIDEO_CHANNEL_ID(0),
+			.channel_id[1] = VIDEO_CHANNEL_ID(1),
+			.channel_id[2] = VIDEO_CHANNEL_ID(2),
+			.channel_id[3] = UI_CHANNEL_ID(0),
+			.channel_id[4] = UI_CHANNEL_ID(1),
+			.channel_id[5] = UI_CHANNEL_ID(2),
+		},
+		{
+			.name = "v0v1u0u1",
+			.mode_id = 1,
+			.channel_cnt = 4,
+			.channel_id[0] = VIDEO_CHANNEL_ID(0),
+			.channel_id[1] = VIDEO_CHANNEL_ID(1),
+			.channel_id[2] = UI_CHANNEL_ID(0),
+			.channel_id[3] = UI_CHANNEL_ID(1),
+		},
+		{
+			.name = "v0v1u0u2",
+			.mode_id = 2,
+			.channel_cnt = 4,
+			.channel_id[0] = VIDEO_CHANNEL_ID(0),
+			.channel_id[1] = VIDEO_CHANNEL_ID(1),
+			.channel_id[2] = UI_CHANNEL_ID(0),
+			.channel_id[3] = UI_CHANNEL_ID(2),
+		},
+	},
+	{
+		{
+			.name = "u3",
+			.mode_id = 0,
+			.channel_cnt = 1,
+			.channel_id[0] = UI_CHANNEL_ID(3),
+		},
+
+		{
+			.name = "v2u2u3",
+			.mode_id = 1,
+			.channel_cnt = 3,
+			.channel_id[0] = VIDEO_CHANNEL_ID(2),
+			.channel_id[1] = UI_CHANNEL_ID(2),
+			.channel_id[2] = UI_CHANNEL_ID(3),
+		},
+		{
+			.name = "v2u1u3",
+			.mode_id = 2,
+			.channel_cnt = 3,
+			.channel_id[0] = VIDEO_CHANNEL_ID(2),
+			.channel_id[1] = UI_CHANNEL_ID(1),
+			.channel_id[2] = UI_CHANNEL_ID(3),
+		},
+	},
+};
+
+static struct de_bld_desc de352_bld0 = {
+	.name = "blender0",
+	.id = 0,
+	.disp_base = DE_DISP_BASE_OFFSET(DISP_BASE_V3XX, 0, DE_DISP_SIZE_V3XX),
+	.bld_offset = BLD_OFFSET_V3XX,
+	.mode_cnt = ARRAY_SIZE(de352_modes[0]),
+	.mode = &de352_modes[0][0],
+};
+
+static struct de_bld_desc de352_bld1 = {
+	.name = "blender1",
+	.id = 1,
+	.disp_base = DE_DISP_BASE_OFFSET(DISP_BASE_V3XX, 1, DE_DISP_SIZE_V3XX),
+	.bld_offset = BLD_OFFSET_V3XX,
+	.mode_cnt = ARRAY_SIZE(de352_modes[1]),
+	.mode = &de352_modes[1][0],
+};
+
+static struct de_bld_desc *de352_blds[] = {
+	&de352_bld0, &de352_bld1,
+};
+
+static struct de_version_bld de352 = {
+	.version = 0x352,
+	.bld_cnt = ARRAY_SIZE(de352_blds),
+	.bld = &de352_blds[0],
+};
 
 static struct de_version_bld *de_version[] = {
-	&de350, &de355, &de210, &de201,
+	&de350, &de355, &de210, &de201, &de352,
 };
 
 const struct de_bld_desc *get_bld_dsc(struct module_create_info *info)

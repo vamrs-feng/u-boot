@@ -146,21 +146,21 @@ config AW_DRM_DSI
 	help
 		If you want lcd-dsi output for drm driver, select it.
 
-menuconfig AW_DRM_HDMI_TX
+config AW_DRM_HDMI_TX
 	tristate "Support Hdmi Output"
 	depends on AW_DRM
 	default y
 	help
 		If you want hdmi output for drm driver, select it.
 
-menuconfig AW_DRM_HDMI14
+config AW_DRM_HDMI14
 	bool "Support HDMI1.4 Output"
 	depends on AW_DRM_HDMI_TX
 	default n
 	help
 		If you want hdmi1.4 output for drm driver, select it.
 
-menuconfig AW_DRM_HDMI20
+config AW_DRM_HDMI20
 	bool "Support HDMI2.0 Output"
 	depends on AW_DRM_HDMI_TX
 	default y
@@ -204,21 +204,38 @@ menuconfig AW_DRM_EDP
 	help
 		If you want edp/dp output for drm driver, select it.
 
-config AW_DRM_EDP_PHY_USED
+config AW_DRM_EDP_CONTROLLER_USED
     def_bool n
     depends on (AW_DRM_EDP)
     default n
     help
         Selected when aw edp phy used.
 
+config AW_DRM_DP_HDCP
+    def_bool n
+	bool "Support HDCP For DisplayPort"
+    depends on (AW_DRM_EDP)
+    default n
+    help
+        Selected when hdcp need authenticate by software.
+
 config AW_DRM_INNO_EDP13
 	bool "Support inno edp 1.3 PHY"
 	depends on AW_DRM_EDP
-	select AW_DRM_EDP_PHY_USED
+	select AW_DRM_EDP_CONTROLLER_USED
 	select PHY
 	default n
 	help
 		If you want inno edp 1.3 as edp phy, select it.
+
+config AW_DRM_TRILINEAR_EDP14
+	bool "Support trilinear edp 1.4 controller"
+	depends on AW_DRM_EDP
+    select AW_DRM_EDP_CONTROLLER_USED
+    select AW_DRM_DP_HDCP
+	default n
+	help
+		If you want trilinear edp 1.4 as edp controller, select it.
 
 config AW_DRM_EINK200
 	bool "Support eink output"

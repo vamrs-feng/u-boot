@@ -12,7 +12,6 @@
 #include "tcon_top_type.h"
 #include "tcon_top.h"
 
-
 #define TCON_DEVICE_MAX		8
 
 static volatile struct __tcon_top_dev_t *tcon_top[TCON_DEVICE_MAX];//fixme
@@ -146,6 +145,10 @@ s32 tcon1_hdmi_clk_enable(u32 sel, u32 en)
 	if (sel >= TCON_DEVICE_MAX)
 		return -1;
 
+#if (IS_ENABLED(CONFIG_MACH_SUN60IW2))
+	tcon_top[(sel > 2) ? 1 : 0]->tcon_clk_gate.bits.tv0_clk_gate = en;
+	tcon_top[(sel > 2) ? 1 : 0]->tcon_clk_gate.bits.hdmi_src = en;
+#else
 	if (sel == 2)
 		tcon_top[0]->tcon_clk_gate.bits.tv0_clk_gate = en;
 
@@ -157,7 +160,21 @@ s32 tcon1_hdmi_clk_enable(u32 sel, u32 en)
 			tcon_top[0]->tcon_clk_gate.bits.hdmi_src = 0;
 		}
 	}
+#endif
+	return 0;
+}
 
+s32 tcon_hdmi_clk_src_sel(u32 sel, u32 src)
+{
+#if (IS_ENABLED(CONFIG_MACH_SUN60IW2))
+	/* next do: use platform data check version id */
+	u8 bank = 0;
+
+	if (sel > 2)
+		bank = 1;
+
+	tcon_top[bank]->tcon_tv_setup.ver1_bits.tv0_hdmiphy_ccu_sel = src;
+#endif
 	return 0;
 }
 

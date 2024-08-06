@@ -23,6 +23,12 @@
 #include "linux/ctype.h"
 #include "openssl_ext.h"
 #include <asm/arch/ce.h>
+#include <memalign.h>
+#ifdef CONFIG_DM
+#include <dm.h>
+#include <u-boot/rsa-mod-exp.h>
+//#include <u-boot/hash.h>
+#endif
 
 extern void sid_read_rotpk(void *dst);
 int sunxi_bytes_merge(u8 *dst, u32 dst_len, u8 *src, uint src_len);

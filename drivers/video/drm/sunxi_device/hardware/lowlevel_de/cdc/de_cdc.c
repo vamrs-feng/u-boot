@@ -11,6 +11,7 @@
  */
 
 #include <linux/compat.h>
+#include <linux/math64.h>
 #include "de_cdc_platform.h"
 #include "de_cdc_table.h"
 #include "de_cdc_type.h"
@@ -527,7 +528,7 @@ static int sw_highlight_ratio(u32 hw_hl, u32 width, u32 height, int th_low_pct,
 	} else {
 		if (hw_hl > th_low && hw_hl < th_high) {
 			tmp = (s64)(hw_hl - th_low) * 255;
-			ratio = (int)(tmp / (th_high - th_low));
+			ratio = div_u64(tmp, (th_high - th_low));
 		} else if (hw_hl >= th_high) {
 			ratio = 255;
 		} else {

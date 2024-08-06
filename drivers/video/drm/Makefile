@@ -2,7 +2,7 @@
 obj-y += sunxi_drm_drv.o
 
 obj-y += sunxi_drm_crtc.o  sunxi_drm_connector.o sunxi_drm_bridge.o sunxi_drm_helper_funcs.o \
-	drm_fourcc.o drm_modes.o drm_plane.o drm_framebuffer.o load_file.o
+	drm_fourcc.o drm_modes.o drm_plane.o drm_edid.o drm_displayid.o drm_framebuffer.o load_file.o
 
 obj-${CONFIG_CMD_FAT} += load_file.o
 
@@ -37,10 +37,13 @@ obj-$(CONFIG_AW_DRM_TCON_TOP) += sunxi_device/sunxi_tcon_top.o
 
 obj-$(CONFIG_AW_DRM_HDMI_TX) += sunxi_drm_hdmi.o
 obj-$(CONFIG_AW_DRM_HDMI_TX) += sunxi_device/sunxi_hdmi.o
+include $(srctree)/$(obj)/sunxi_device/hardware/lowlevel_hdmi20/Makefile
+obj-$(CONFIG_AW_DRM_HDMI_TX) += $(obj_low_hdmi)
 
 obj-$(CONFIG_AW_DRM_EDP) += sunxi_drm_edp.o sunxi_device/sunxi_edp.o
 
 obj-$(CONFIG_AW_DRM_INNO_EDP13) += sunxi_device/hardware/lowlevel_edp/inno_edp13/inno_edp13.o
+obj-$(CONFIG_AW_DRM_TRILINEAR_EDP14) += sunxi_device/hardware/lowlevel_edp/trilinear_dp14/trilinear_dp14.o
 
 obj-$(CONFIG_AW_DRM_EINK200) += sunxi_drm_eink.o
 obj-$(CONFIG_AW_DRM_EINK200) += sunxi_device/sunxi_eink/sunxi_eink.o \

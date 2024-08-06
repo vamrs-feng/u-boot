@@ -10,8 +10,7 @@
  * warranty of any kind, whether express or implied.
  */
 
-
-#include <include.h>
+#include "include.h"
 #include "tcon_tv_reg.h"
 #include "tcon_top.h"
 #include "tcon_tv.h"
@@ -87,7 +86,6 @@ u32 tcon_tv_get_cur_line(struct sunxi_tcon_tv *tcon)
 	return tcon->reg->tcon_debug.bits.tcon_tv_current_line;
 }
 
-
 s32 tcon_tv_get_status(struct sunxi_tcon_tv *tcon)
 {
 	if (tcon->reg->tcon_debug.bits.tcon_tv_fifo_under_flow) {
@@ -115,13 +113,21 @@ s32 tcon_tv_close(struct sunxi_tcon_tv *tcon)
 s32 tcon_tv_cfg(struct sunxi_tcon_tv *tcon, struct disp_video_timings *timing)
 {
 	u32 start_delay;
-
+#if IS_ENABLED(CONFIG_MACH_SUN60IW2)
+	if (timing->vic == 39) {
+		tcon->reg->tcon_tv_basic1.bits.vic39 = 0x1;
+		tcon->reg->tcon_tv_basic1.bits.vt = timing->ver_total_time;
+	} else
+		tcon->reg->tcon_tv_basic1.bits.vt = (timing->ver_total_time * 2);
+#else
 	tcon->reg->tcon_tv_basic0.bits.x = timing->x_res - 1;
 	tcon->reg->tcon_tv_basic0.bits.y =
 	    timing->y_res / (timing->b_interlace + 1) - 1;
 	tcon->reg->tcon_tv_basic1.bits.ls_xo = timing->x_res - 1;
 	tcon->reg->tcon_tv_basic1.bits.ls_yo = timing->y_res
 	    / (timing->b_interlace + 1) + timing->vactive_space - 1;
+#endif
+
 	tcon->reg->tcon_tv_basic2.bits.xo = timing->x_res - 1;
 	tcon->reg->tcon_tv_basic2.bits.yo = timing->y_res
 	    / (timing->b_interlace + 1) + timing->vactive_space - 1;

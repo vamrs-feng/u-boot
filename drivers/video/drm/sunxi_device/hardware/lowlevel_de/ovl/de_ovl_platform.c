@@ -224,8 +224,79 @@ static struct de_version_ovl de201 = {
 	.ovl = de201_ovls,
 };
 
+static struct de_ovl_dsc de352_ovls[] = {
+	{
+		.name = "vch0",
+		.id = 0,
+		.type_hw_id = 0,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 0, DE_CHN_SIZE),
+		.type = OVL_TYPE_VI,
+	},
+	{
+		.name = "vch1",
+		.id = 1,
+		.type_hw_id = 1,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 1, DE_CHN_SIZE),
+		.type = OVL_TYPE_VI,
+	},
+	{
+		.name = "vch2",
+		.id = 2,
+		.type_hw_id = 2,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 2, DE_CHN_SIZE),
+		.type = OVL_TYPE_VI,
+	},
+	{
+		.name = "uch0",
+		.id = 3,
+		.type_hw_id = 0,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 6, DE_CHN_SIZE),
+		.type = OVL_TYPE_UI,
+	},
+	{
+		.name = "uch1",
+		.id = 4,
+		.type_hw_id = 1,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 7, DE_CHN_SIZE),
+		.type = OVL_TYPE_UI,
+	},
+	{
+		.name = "uch2",
+		.id = 5,
+		.type_hw_id = 2,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 8, DE_CHN_SIZE),
+		.type = OVL_TYPE_UI,
+	},
+	{
+		.name = "uch3",
+		.id = 6,
+		.type_hw_id = 3,
+		.layer_cnt = 4,
+		.channel_base = DE_CHN_BASE_OFFSET(DE_CHN_OFFSET_BASE,
+					0, 0, 9, DE_CHN_SIZE),
+		.type = OVL_TYPE_UI,
+	},
+};
+
+static struct de_version_ovl de352 = {
+	.version = 0x352,
+	.ovl_cnt = ARRAY_SIZE(de352_ovls),
+	.ovl = de352_ovls,
+};
 static struct de_version_ovl *de_version[] = {
-	&de350, &de355, &de210, &de201,
+	&de350, &de355, &de210, &de201, &de352,
 };
 
 const struct de_ovl_dsc *get_ovl_dsc(struct module_create_info *info)

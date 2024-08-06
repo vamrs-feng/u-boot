@@ -21,6 +21,7 @@
 #include <linux/types.h>
 #include <clk/clk.h>
 #include <reset.h>
+#include <drm/drm_modes.h>
 
 struct udevice;
 enum uclass_id;
@@ -31,6 +32,7 @@ enum {
 	PORT_DIR_IN,
 	PORT_DIR_OUT,
 };
+int sunxi_ofnode_get_display_mode(ofnode node, struct drm_display_mode *mode, u32 *bus_flags);
 
 struct device_node *
 sunxi_of_graph_get_endpoint_by_regs(ofnode node, int port, int endpoint);
@@ -56,8 +58,10 @@ int sunxi_clk_enable(struct clk **clk_array, u32 no_of_clk);
 int sunxi_clk_disable(struct clk **clk_array, u32 no_of_clk);
 
 ulong sunxi_drm_gpio_request(struct udevice *dev, char *sub_name);
+ulong sunxi_drm_gpio_node_request(ofnode node, char *sub_name);
 
 int sunxi_drm_gpio_set_value(ulong p_handler, u32 value);
 
 int sunxi_drm_power_enable(uint32_t phandle);
+int sunxi_drm_power_disable(uint32_t phandle);
 #endif /*End of file*/

@@ -23,6 +23,7 @@
 #include <fastlogo.h>
 #include <sys_partition.h>
 #include <sunxi_eink.h>
+#include <drm/drm_framebuffer.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -61,6 +62,18 @@ int sprite_cartoon_screen_set(void)
 	sprite_source.screen_height = cv->height;
 	sprite_source.screen_buf = (char *)cv->base;
 	fb_unlock(FB_ID_0, NULL, 1);
+#endif
+
+#if defined (CONFIG_AW_DRM)
+	struct drm_framebuffer *drm_fb = NULL;
+	drm_fb = drm_fb_lock();
+	if (NULL == drm_fb) {
+		printf("drm_fb lock for sprite cartoon fail\n");
+		return -1;
+	}
+	sprite_source.screen_width = drm_fb->width;
+	sprite_source.screen_height = drm_fb->height;
+	sprite_source.screen_buf = (char *)drm_fb->dma_addr;
 #endif
 
 #if defined (CONFIG_SUNXI_TV_FASTLOGO)
