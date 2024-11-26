@@ -364,6 +364,7 @@ __weak int reserve_mmu(void)
 static int reserve_video(void)
 {
 #ifdef CONFIG_DM_VIDEO
+#ifndef CONFIG_AW_DRM
 	ulong addr;
 	int ret;
 
@@ -372,6 +373,7 @@ static int reserve_video(void)
 	if (ret)
 		return ret;
 	gd->relocaddr = addr;
+#endif
 #elif defined(CONFIG_LCD)
 #  ifdef CONFIG_FB_ADDR
 	gd->fb_base = CONFIG_FB_ADDR;

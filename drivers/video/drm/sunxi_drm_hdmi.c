@@ -53,6 +53,7 @@ struct sunxi_hdmi_ctrl_s {
 	unsigned int drv_dts_power_cnt;
 	unsigned int dts_fast_output;
 	unsigned int dts_auto_select;
+	unsigned int drv_dts_res_src;
 
 	int drv_clock;
 	int drv_enable;
@@ -970,6 +971,9 @@ int __sunxi_hdmi_init_dts(struct sunxi_drm_hdmi *hdmi)
 	ret = ofnode_read_u32(node, "uhdmi_power_count", &value);
 	pcfg->drv_dts_power_cnt = (ret != 0x0) ? 0x0 : value;
 
+	ret = ofnode_read_u32(node, "uhdmi_resistor_select", &value);
+	pcfg->drv_dts_res_src = (ret != 0x0) ? 0x1 : value;
+
 	/* parse tcon clock */
 	pclk->clk_tcon_tv = clk_get_by_name(dev, "clk_tcon_tv");
 	if (IS_ERR_OR_NULL(pclk->clk_tcon_tv))
@@ -1082,6 +1086,7 @@ int _sunxi_hdmi_init_drv(struct sunxi_drm_hdmi *hdmi)
 	/* sunxi hdmi core level init */
 	hdmi->hdmi_core.dev = hdmi->dev;
 	hdmi->hdmi_core.clock_src = 0x0;
+	hdmi->hdmi_core.resistor_src = hdmi->hdmi_ctrl.drv_dts_res_src;
 	ret = sunxi_hdmi_init(&hdmi->hdmi_core);
 	if (ret != 0) {
 		hdmi_err("sunxi hdmi init core failed!!!\n");

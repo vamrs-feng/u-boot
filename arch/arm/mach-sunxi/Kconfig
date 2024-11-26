@@ -644,4 +644,20 @@ config USB3_VBUS_PIN
 	default ""
 	---help---
 	See USB1_VBUS_PIN help text.
+
+config PCIE_PERST_GPIO
+	string "PERST enable pin for PCIE "
+	default ""
+	---help---
+	Set the PERST enable pin for PCIE. This takes
+	a string in the format understood by sunxi_name_to_gpio, e.g.
+	PH1 for pin 1 of port H.
+
+config PCIE_WAKE_GPIO
+	string "WAKE enable pin for PCIE "
+	default ""
+	---help---
+	Set the WAKE enable pin for PCIE. This takes
+	a string in the format understood by sunxi_name_to_gpio, e.g.
+	PH1 for pin 1 of port H.
 endif

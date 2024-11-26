@@ -9,9 +9,10 @@
  * warranty of any kind, whether express or implied.
  ******************************************************************************/
 #include <asm/io.h>
+#include <linux/io.h>
 #include <linux/err.h>
 #include <linux/delay.h>
-
+#include <linux/bitops.h>
 #include "sunxi_hdmi.h"
 
 struct sunxi_hdmi_vic_mode {
@@ -53,13 +54,23 @@ struct sunxi_hdmi_plat_s sun55i_hdmi = {
 
 struct sunxi_hdmi_plat_s sun60i_hdmi = {
 	.version = HDMI_SUN60I_W2_P1,
-	.use_top_phy            = 0x1,
+	.use_top_phy            = SUNXI_HDMI_ENABLE,
 	.phy_func.phy_init      = snps_phy_init,
 	.phy_func.phy_config    = snps_phy_config,
 	.phy_func.phy_disconfig = snps_phy_disconfig,
 	.phy_func.phy_read      = snps_phy_read,
 	.phy_func.phy_write     = snps_phy_write,
 	.phy_func.phy_dump      = snps_phy_dump,
+
+	/* config sun60i res cal and register and bitmask */
+	.need_res_cal        = SUNXI_HDMI_ENABLE,
+	.rescal_regs.rescal_ctrl_pa   = 0x03000160,
+	.rescal_regs.bit_hdmi_res_sel = 12,
+	.rescal_regs.bit_rescal_mode  = 2,
+	.rescal_regs.bit_cal_ana_en   = 1,
+	.rescal_regs.bit_cal_en       = 0,
+	.rescal_regs.res0_ctrl_pa        = 0x03000164,
+	.rescal_regs.res0_ctrl_bitmask   = (u32)GENMASK(31, 24),
 };
 
 struct sunxi_hdmi_s      *sunxi_hdmi;
@@ -161,15 +172,6 @@ int sunxi_hdmi_phy_resume(void)
 
 int sunxi_hdmi_i2cm_xfer(struct i2c_msg *msgs, int num)
 {
-	int i = 0;
-	hdmi_trace("sunxi hdmi i2c xfer:\n");
-	for (i = 0; i < num; i++) {
-		hdmi_trace(" - msg[%d].addr : 0x%x\n", i, msgs[i].addr);
-		hdmi_trace(" - msg[%d].flags: 0x%x\n", i, msgs[i].flags);
-		hdmi_trace(" - msg[%d].len  : 0x%x\n", i, msgs[i].len);
-		hdmi_trace(" - msg[%d].buf  : 0x%x\n", i, *msgs[i].buf);
-	}
-
 	return dw_i2cm_xfer(msgs, num);
 }
 
@@ -793,6 +795,45 @@ ret_failed:
 	return -1;
 }
 
+static int _sunxi_hdmi_board_init(struct sunxi_hdmi_s *hdmi)
+{
+	u8 res_src   = hdmi->resistor_src;
+	u8 rescal_en = hdmi->plat_data->need_res_cal;
+	struct sunxi_hdmi_rescal_s *res_reg = &hdmi->plat_data->rescal_regs;
+
+	void __iomem *reg_addr;
+
+	if (!rescal_en) {
+		hdmi_trace("this plat not need use resistance calibration\n");
+		return 0;
+	}
+
+	if (res_src == 0x1) {
+		reg_addr = ioremap(res_reg->rescal_ctrl_pa, 4);
+		writel(readl(reg_addr) | res_reg->bit_hdmi_res_sel, reg_addr);
+		iounmap(reg_addr);
+
+		reg_addr = ioremap(res_reg->res0_ctrl_pa, 4);
+		writel(readl(reg_addr) & (~res_reg->res0_ctrl_bitmask), reg_addr);
+		iounmap(reg_addr);
+	} else {
+		reg_addr = ioremap(res_reg->rescal_ctrl_pa, 4);
+
+		writel((readl(reg_addr) & (~res_reg->bit_cal_en)), reg_addr);
+		writel((readl(reg_addr) & (~res_reg->bit_hdmi_res_sel)), reg_addr);
+		writel((readl(reg_addr) | (res_reg->bit_cal_ana_en)), reg_addr);
+		writel((readl(reg_addr) | (res_reg->bit_cal_en)), reg_addr);
+
+		udelay(200);
+
+		writel((readl(reg_addr) & (~res_reg->bit_cal_ana_en)), reg_addr);
+		writel((readl(reg_addr) & (~res_reg->bit_cal_en)), reg_addr);
+
+		iounmap(reg_addr);
+	}
+
+	return 0;
+}
 static const struct udevice_id hdmi_plat_match[] = {
 	{ .compatible = "arm,sun8iw20p1", .data = (ulong)&sun8i_hdmi },
 	{ .compatible = "arm,sun50iw9p1", .data = (ulong)&sun50i_hdmi },
@@ -830,6 +871,8 @@ int sunxi_hdmi_init(struct sunxi_hdmi_s *hdmi)
 		shdmi_err(hdmi->plat_data);
 		return -1;
 	}
+
+	_sunxi_hdmi_board_init(hdmi);
 
 	/* bind phy ops */
 	hdmi->dw_hdmi.phy_ext   = &hdmi->plat_data->phy_func;

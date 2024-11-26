@@ -10,6 +10,7 @@
 #include <dt-bindings/thermal/thermal.h>
 #include <media_bus_format.h>
 #include <drm/drm_mipi_dsi.h>
+#include <dt-bindings/phy/phy.h>
 / {
 	model = "sun55iw3";
 	compatible = "allwinner,a523", "arm,sun55iw3p1";
@@ -1185,6 +1186,37 @@ pwm: pwm@2000c00 {
 				<&clk_sdmmc2_rst>,
 				<&clk_sdmmc2_bus>;
 			status = "okay";
+		};
+		combophy: phy@4f00000 {
+			compatible = "allwinner,inno-combphy";
+			reg = <0x0 0x04f00000 0x0 0x80000>, /* Sub-System Application Registers */
+			      <0x0 0x04f80000 0x0 0x80000>; /* Combo INNO PHY Registers */
+			reg-names = "phy-ctl", "phy-clk";
+			#phy-cells = <1>;
+			status = "disabled";
+		};
+
+		pcie: pcie@4800000 {
+			compatible = "allwinner,sunxi-pcie-v210-rc";
+			#address-cells = <3>;
+			#size-cells = <2>;
+			bus-range = <0x0 0xff>;
+			reg = <0 0x04800000 0 0x480000>;
+			reg-names = "dbi";
+			device_type = "pci";
+			ranges = <0x00000800 0 0x20000000 0x0 0x20000000 0 0x01000000
+				  0x81000000 0 0x21000000 0x0 0x21000000 0 0x01000000
+				  0x82000000 0 0x22000000 0x0 0x22000000 0 0x0e000000>;
+			num-lanes = <1>;
+			phys = <&combophy PHY_TYPE_PCIE>;
+			phy-names = "pcie-phy";
+			#interrupt-cells = <1>;
+			num-edma = <4>;
+			max-link-speed = <2>;
+			num-ib-windows = <8>;
+			num-ob-windows = <8>;
+			linux,pci-domain = <0>;
+			status = "disabled";
 		};
 	};
 

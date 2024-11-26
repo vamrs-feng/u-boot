@@ -112,4 +112,12 @@ config PCIE_INTEL_FPGA
 	  Say Y here if you want to enable PCIe controller support on Intel
 	  FPGA, example Stratix 10.
 
+config PCIE_ALLWINNER_RC
+	bool "Allwinner DesignWare PCIe controller"
+	default n
+	depends on ARCH_SUNXI
+	select DM
+	help
+	   Enables support for the DW PCIe controller in the Allwinner SoC.
+
 endif

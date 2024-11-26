@@ -109,6 +109,11 @@
 #define USBPHY1_RST_BIT 30
 #define USBPHY1_SCLK_GATING_BIT 31
 
+#define PCIE_AUX_CLK_GATING_BIT 31
+
+#define PCIE_BRG_REG_RST 16
+#define PCIE_REF_CLK_GATING 31
+
 struct sunxi_cpu_pll_reg{
 	uint32_t pll_cpu0_ctrl_reg; /*0x00*/
 	uint32_t pll_cpu1_ctrl_reg;

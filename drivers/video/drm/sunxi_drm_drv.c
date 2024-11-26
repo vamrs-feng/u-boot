@@ -69,13 +69,16 @@ int sunxi_drm_kernel_para_flush(void)
 	struct sunxi_drm_device *drm = sunxi_drm_device_get();
 	struct drm_framebuffer *fb;
 	int node = fdt_path_offset(working_fdt, "/soc/sunxi-drm");
+	struct drm_display_mode *mode;
 	int boot_info_node = 0;
+	int boot_mode_node = 0;
 	char name[16];
 	int i = 0;
 	int ret;
 
 	if (!drm)
 		return -1;
+
 	sunxi_drm_for_each_display(state, drm) {
 		if (state->is_enable) {
 			fb = drm_framebuffer_lookup(drm, state->fb_id);
@@ -89,6 +92,47 @@ int sunxi_drm_kernel_para_flush(void)
 				return -1;
 			}
 
+			boot_mode_node = fdt_add_subnode(working_fdt, boot_info_node, "mode");
+			if (boot_mode_node < 0) {
+				DRM_ERROR("%s for fdt_add_subnode fail\n", __func__);
+				return -1;
+			}
+			/*******************************************************************
+			 *	sunxi-drm {
+			 *		booting-x {
+			 *			...
+			 *			route = <>;
+			 *			logo  = <>;
+			 *			mode {
+			 *				clock = <>;
+			 *				hdisplay = <>;
+			 *				vdisplay = <>;
+			 *				...
+			 *			}
+			 *		}
+			 *	}
+			 ******************************************************************/
+#define fdt_mode_append(name, val) \
+			fdt_appendprop_u32(working_fdt, boot_mode_node, name, (uint32_t)val)
+
+			mode = &state->conn_state.mode;
+			fdt_mode_append("clock", mode->clock);
+			fdt_mode_append("hdisplay", mode->hdisplay);
+			fdt_mode_append("vdisplay", mode->vdisplay);
+			fdt_mode_append("hsync_start", mode->hsync_start);
+			fdt_mode_append("vsync_start", mode->vsync_start);
+			fdt_mode_append("hsync_end", mode->hsync_end);
+			fdt_mode_append("vsync_end", mode->vsync_end);
+			fdt_mode_append("htotal", mode->htotal);
+			fdt_mode_append("vtotal", mode->vtotal);
+			fdt_mode_append("vrefresh", mode->vrefresh);
+			fdt_mode_append("vscan", mode->vscan);
+			fdt_mode_append("flags", mode->flags);
+			fdt_mode_append("hskew", mode->hskew);
+			fdt_mode_append("type",  mode->type);
+			fdt_mode_append("ratio", mode->picture_aspect_ratio);
+#undef fdt_mode_append
+
 #define fdt_append(name, val) \
 			fdt_appendprop_u32(working_fdt, boot_info_node, name, (uint32_t)val)
 
@@ -101,6 +145,7 @@ int sunxi_drm_kernel_para_flush(void)
 			fdt_append("route", state->crtc_state.tcon_id);
 			fdt_append("route", state->conn_state.connector->type);
 			fdt_append("route", state->conn_state.connector->id);
+
 /* TODO add databits colorspace format...
 			fdt_append("color", ); */
 #undef fdt_append

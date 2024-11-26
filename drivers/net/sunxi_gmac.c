@@ -26,6 +26,13 @@
 #include <miiphy.h>
 #include <phy.h>
 
+#if defined(CONFIG_MACH_SUN55IW3)
+#define SUNXI_GMAC_SYSCFG	SUNXI_SYSCTRL_BASE
+#define SUNXI_GMAC_BASE		SUNXI_GMAC0_BASE
+#else
+#define SUNXI_GMAC_SYSCFG	SUNXI_SRAMC_BASE
+#endif
+
 #define SYSCFG_PHY_CLK		0x30
 #define GMAC_CLK_REG		0x097c
 #define GMAC_25M_CLK_REG	0x0970
@@ -329,7 +336,7 @@ static int sunxi_gmac_hardware_init(struct sunxi_gmac *chip)
 	u32 value;
 	int ret;
 
-	value = readl(SUNXI_SRAMC_BASE + SYSCFG_PHY_CLK);
+	value = readl(SUNXI_GMAC_SYSCFG + SYSCFG_PHY_CLK);
 
 	/* Write phy type */
 	if (chip->phy_type == SUNXI_EXTERNAL_PHY)
@@ -360,7 +367,7 @@ static int sunxi_gmac_hardware_init(struct sunxi_gmac *chip)
 	value &= ~(GMAC_RX_DELAY_MASK << GMAC_RX_DELAY_OFFSET);
 	value |= ((chip->rx_delay & GMAC_RX_DELAY_MASK) << GMAC_RX_DELAY_OFFSET);
 
-	writel(value, SUNXI_SRAMC_BASE + SYSCFG_PHY_CLK);
+	writel(value, SUNXI_GMAC_SYSCFG + SYSCFG_PHY_CLK);
 
 	/* enable gmac clk */
 	value = readl(SUNXI_CCM_BASE + GMAC_CLK_REG);
