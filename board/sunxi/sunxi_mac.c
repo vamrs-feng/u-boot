@@ -7,6 +7,35 @@
  */
 #include <common.h>
 #include <fdt_support.h>
+#include <asm/io.h>
+#include <smc.h>
+
+#define SUNXI_SID_BASE 0x03006000
+#define SUNXI_SID_KEY0 0x0A0
+
+static void generate_mac_from_cpuid(char *mac_addr, int index)
+{
+	u8 sunxi_soc_chipid[4];
+
+	/* Read CPU ID from SID */
+
+	sunxi_soc_chipid[0] = smc_readl(SUNXI_SID_BASE + 0x200);
+	sunxi_soc_chipid[1] = smc_readl(SUNXI_SID_BASE + 0x200 + 0x4);
+	sunxi_soc_chipid[2] = smc_readl(SUNXI_SID_BASE + 0x200 + 0x8);
+	sunxi_soc_chipid[3] = smc_readl(SUNXI_SID_BASE + 0x200 + 0xc);
+	pr_notice("chip id : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+	       sunxi_soc_chipid[0], sunxi_soc_chipid[1], sunxi_soc_chipid[2], sunxi_soc_chipid[3]);
+
+
+	/* Generate MAC address using CPU ID */
+	sprintf(mac_addr, "%02x:%02x:%02x:%02x:%02x:%02x",
+		0x08,
+		sunxi_soc_chipid[0] & 0x7F,
+		sunxi_soc_chipid[1] & 0xFF,
+		sunxi_soc_chipid[2] & 0xFF,
+		sunxi_soc_chipid[3] & 0xFF,
+		(index & 0xFF));
+}
 
 static int str2num(char *str, char *num)
 {
@@ -70,6 +99,7 @@ struct addr_info_t {
 
 static struct addr_info_t addr[] = {
 	{"mac",      "addr_eth",  1},
+	{"mac1",     "addr_eth1", 1},
 	{"wifi_mac", "addr_wifi", 1},
 	{"bt_mac",   "addr_bt",   0},
 };
@@ -79,20 +109,31 @@ int update_sunxi_mac(void)
 	char *p = NULL;
 	int   i = 0;
 	int   nodeoffset = 0;
+	char  mac_str[20];
 	struct fdt_header *dtb_base = working_fdt;
 
 	nodeoffset = fdt_path_offset(dtb_base, "/soc/addr_mgt");
 
 	for (i = 0; i < ARRAY_SIZE(addr); i++) {
 		p = env_get(addr[i].envname);
+
+		/* Generate MAC address for mac and mac1 if not set */
+		if (p == NULL && (strcmp(addr[i].envname, "mac") == 0 ||
+                             strcmp(addr[i].envname, "mac1") == 0)) {
+
+			generate_mac_from_cpuid(mac_str, i);
+			env_set(addr[i].envname, mac_str);
+			p = mac_str;
+		}
+
 		if (p != NULL) {
+			pr_warn("mac addr => %s\n", p);
 			if (addr_parse(p, addr[i].flag)) {
 				/*if not pass, clean it, do not pass through cmdline*/
 				pr_err("%s format illegal\n", addr[i].envname);
 				env_set(addr[i].envname, "");
 				continue;
 			}
-
 			if (nodeoffset >= 0)
 				fdt_setprop_string(dtb_base, nodeoffset, addr[i].dtsname, p);
 		}
