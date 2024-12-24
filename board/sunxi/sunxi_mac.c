@@ -15,7 +15,8 @@
 
 static void generate_mac_from_cpuid(char *mac_addr, int index)
 {
-	u8 sunxi_soc_chipid[4];
+	u16 sunxi_soc_chipid[4];
+	u8 byte1, byte2, byte3, byte4, byte5, byte6;
 
 	/* Read CPU ID from SID */
 
@@ -23,18 +24,20 @@ static void generate_mac_from_cpuid(char *mac_addr, int index)
 	sunxi_soc_chipid[1] = smc_readl(SUNXI_SID_BASE + 0x200 + 0x4);
 	sunxi_soc_chipid[2] = smc_readl(SUNXI_SID_BASE + 0x200 + 0x8);
 	sunxi_soc_chipid[3] = smc_readl(SUNXI_SID_BASE + 0x200 + 0xc);
-	pr_notice("chip id : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+	pr_err("chip id : 0x%08x 0x%08x 0x%08x 0x%08x\n",
 	       sunxi_soc_chipid[0], sunxi_soc_chipid[1], sunxi_soc_chipid[2], sunxi_soc_chipid[3]);
 
+	byte1 = 0x08;
+	byte2 = ((sunxi_soc_chipid[0] >> 8) & 0xFF) ^ (sunxi_soc_chipid[0] & 0xFF);
+	byte3 = ((sunxi_soc_chipid[1] >> 8) & 0xFF) ^ (sunxi_soc_chipid[1] & 0xFF);
+	byte4 = ((sunxi_soc_chipid[2] >> 8) & 0xFF) ^ (sunxi_soc_chipid[2] & 0xFF);
+	byte5 = ((sunxi_soc_chipid[3] >> 8) & 0xFF) ^ (sunxi_soc_chipid[3] & 0xFF);
+	byte6 = index ^ (byte2 + byte3 + byte4 + byte5);
 
 	/* Generate MAC address using CPU ID */
 	sprintf(mac_addr, "%02x:%02x:%02x:%02x:%02x:%02x",
-		0x08,
-		sunxi_soc_chipid[0] & 0x7F,
-		sunxi_soc_chipid[1] & 0xFF,
-		sunxi_soc_chipid[2] & 0xFF,
-		sunxi_soc_chipid[3] & 0xFF,
-		(index & 0xFF));
+		byte1, byte2, byte3, byte4, byte5, byte6
+	);
 }
 
 static int str2num(char *str, char *num)
