@@ -84,6 +84,9 @@ int sunxi_flash_probe(void);
 int sunxi_flash_init_ext(void);
 int get_board_flash_type_exist(SUNXI_BOOT_STORAGE boardflash);
 
+int sunxi_flash_sprite_init(int storage_type, int workmode);
+int sunxi_flash_sprite_switch(int storage_type, int workmode);
+
 int sunxi_flash_boot_init(int storage_type, int workmode);
 int save_partition_fdt_to_flash(void *fdt_buf, size_t fdt_size);
 int save_fdt_to_flash(void *fdt_buf, size_t fdt_size);

@@ -21,6 +21,10 @@
 #include "sprite_download.h"
 #include "sprite_verify.h"
 
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+#include <sunxi_dual_storage.h>
+#endif
+
 __attribute__((section(".data"))) static sunxi_flash_desc *current_flash;
 
 __attribute__((section(".data"))) static sunxi_flash_desc *sprite_flash;
@@ -311,6 +315,9 @@ int sunxi_flash_boot_init(int storage_type, int workmode)
 		state		      = current_flash->init(workmode, card_no);
 
 #ifdef CONFIG_SUNXI_RECOVERY_BOOT0_COPY0
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+		if (get_boot_storage_type() == storage_type)
+#endif
 		sunxi_flash_mmc_recover_boot0_copy0();
 #endif
 	} break;
@@ -483,6 +490,97 @@ int sunxi_board_flash_probe(void)
 	return 0;
 }
 
+int sunxi_flash_sprite_init(int storage_type, int workmode)
+{
+	int state = 0;
+
+	switch (storage_type) {
+#ifdef CONFIG_SUNXI_NAND
+	case STORAGE_NAND:
+	case STORAGE_SPI_NAND: {
+		current_flash = &sunxi_nand_desc;
+		state	 = current_flash->probe();
+	} break;
+#endif
+
+#ifdef CONFIG_SUNXI_SDMMC
+	case STORAGE_SD:
+	case STORAGE_EMMC:
+	case STORAGE_EMMC0:
+	case STORAGE_EMMC3: {
+		current_flash = &sunxi_sdmmcs_desc;
+		state	 = current_flash->probe();
+	} break;
+#endif
+
+#ifdef CONFIG_SUNXI_SPINOR
+	case STORAGE_NOR: {
+		current_flash = &sunxi_spinor_desc;
+		state	 = current_flash->probe();
+	} break;
+#endif
+	default: {
+		pr_err("not support\n");
+		state = -1;
+	} break;
+	}
+
+	if (state != 0) {
+		return -1;
+	}
+
+	sprite_flash = current_flash;
+#ifdef CONFIG_SUNXI_SDMMC
+	if (workmode == WORK_MODE_CARD_PRODUCT) {
+		current_flash = &sunxi_sdmmc_desc;
+		if (current_flash->init(0, 0))
+			return -1;
+	}
+#endif
+
+	return 0;
+}
+
+int sunxi_flash_sprite_switch(int storage_type, int workmode)
+{
+	switch (storage_type) {
+#ifdef CONFIG_SUNXI_NAND
+	case STORAGE_NAND:
+	case STORAGE_SPI_NAND: {
+		current_flash = &sunxi_nand_desc;
+	} break;
+#endif
+
+#ifdef CONFIG_SUNXI_SDMMC
+	case STORAGE_SD:
+	case STORAGE_EMMC:
+	case STORAGE_EMMC0:
+	case STORAGE_EMMC3: {
+		current_flash = &sunxi_sdmmcs_desc;
+	} break;
+#endif
+
+#ifdef CONFIG_SUNXI_SPINOR
+	case STORAGE_NOR: {
+		current_flash = &sunxi_spinor_desc;
+	} break;
+#endif
+	default: {
+		pr_err("not support\n");
+		return -1;
+	} break;
+	}
+	sprite_flash = current_flash;
+
+#ifdef CONFIG_SUNXI_SDMMC
+	if (workmode == WORK_MODE_CARD_PRODUCT) {
+		current_flash = &sunxi_sdmmc_desc;
+	}
+#endif
+
+	return 0;
+}
+
 int sunxi_flash_init_ext(void)
 {
 	int workmode     = 0;
@@ -498,6 +596,11 @@ int sunxi_flash_init_ext(void)
 		return 0;
 	} else if (workmode == WORK_MODE_BOOT ||
 		   workmode == WORK_MODE_SPRITE_RECOVERY) {
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+		state = sunxi_dual_storage_handle(SUNXI_DUAL_STORAGE_BOOT, workmode);
+		if (state == 0)
+			goto out;
+#endif
 		state = sunxi_flash_boot_init(storage_type, workmode);
 		if (storage_type == STORAGE_SD) {
 			extern int get_dragonboard_test(
@@ -509,11 +612,18 @@ int sunxi_flash_init_ext(void)
 				sunxi_board_flash_probe();
 		}
 	} else if ((workmode & WORK_MODE_PRODUCT) || (workmode == 0x30)) {
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+		state = sunxi_dual_storage_handle(SUNXI_DUAL_STORAGE_SPRITE, workmode);
+		if (state == 0)
+			goto out;
+#endif
 		state = sunxi_flash_probe();
 	} else if (workmode & WORK_MODE_UPDATE) {
 	} else {
 	}
-
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+out:
+#endif
 	//init blk dev
 	sunxi_flash_init_blk();
 

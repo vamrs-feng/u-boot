@@ -6,4 +6,5 @@
 
 obj-$(CONFIG_SUNXI_FLASH) += sunxi_flash.o
 obj-$(CONFIG_SUNXI_FLASH) += sunxi_flashmap.o
+obj-$(CONFIG_SUNXI_DUAL_STORAGE) += sunxi_dual_storage.o
 

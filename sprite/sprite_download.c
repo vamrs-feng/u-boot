@@ -38,6 +38,10 @@
 #include <asm/arch/rtc.h>
 #include <sys_partition.h>
 
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+#include <sunxi_dual_storage.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define GPT_BUFF_SIZE        (8*1024)
@@ -173,8 +177,11 @@ int sunxi_sprite_download_uboot(void *buffer, int production_media, int generate
 	sunxi_verify_preserve_toc1(buffer);
 #endif
 
-	return sunxi_sprite_download_toc(buffer, length, production_media);
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+	sunxi_dual_storage_handle(SUNXI_DUAL_STORAGE_SWITCH, get_boot_work_mode());
+#endif
 
+	return sunxi_sprite_download_toc(buffer, length, production_media);
 }
 
 int sunxi_sprite_upload_uboot(void *buffer, uint len)

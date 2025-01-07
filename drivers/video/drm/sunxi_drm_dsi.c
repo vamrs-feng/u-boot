@@ -265,7 +265,6 @@ static int sunxi_dsi_connector_init(struct sunxi_drm_connector *conn,
 	struct sunxi_drm_dsi *dsi = dev_get_priv(conn->dev);
 	struct crtc_state *scrtc_state = &state->crtc_state;
 	struct sunxi_drm_phy_cfg *phy_cfg = &dsi->phy_opts;
-	int ret;
 
 	scrtc_state->tcon_id = dsi->tcon_id;
 	scrtc_state->check_status = sunxi_dsi_fifo_check;
@@ -283,15 +282,15 @@ static int sunxi_dsi_connector_init(struct sunxi_drm_connector *conn,
 	phy_cfg->mode = PHY_MODE_MIPI_DPHY;
 	phy_cfg->submode = PHY_SINGLE_ENABLE;
 	if (dsi->phy) {
-		ret = generic_phy_power_on(dsi->phy);
+		generic_phy_power_on(dsi->phy);
 	}
 	if ((dsi->slave) && (dsi->slave->phy)) {
 		phy_cfg->submode = PHY_DUAL_ENABLE;
-		ret = generic_phy_power_on(dsi->slave->phy);
-		ret += generic_phy_configure(dsi->phy, phy_cfg);
-		ret += generic_phy_configure(dsi->slave->phy, phy_cfg);
+		generic_phy_power_on(dsi->slave->phy);
+		generic_phy_configure(dsi->phy, phy_cfg);
+		generic_phy_configure(dsi->slave->phy, phy_cfg);
 	} else {
-		ret += generic_phy_configure(dsi->phy, phy_cfg);
+		generic_phy_configure(dsi->phy, phy_cfg);
 	}
 
 	pinctrl_select_state(dsi->dev, "active");
@@ -332,9 +331,9 @@ static int sunxi_dsi_enable_output(struct sunxi_drm_dsi *dsi)
 {
 	struct disp_dsi_para *dsi_para = &dsi->dsi_para;
 	sunxi_tcon_enable_output(dsi->tcon_dev);
-	dsi_open(&dsi->dsi_lcd, dsi_para);
+	dsi_open_hs_mode(&dsi->dsi_lcd, dsi_para);
 	if (dsi->slave)
-		dsi_open(&dsi->slave->dsi_lcd, dsi_para);
+		dsi_open_hs_mode(&dsi->slave->dsi_lcd, dsi_para);
 
 	return 0;
 }
@@ -465,12 +464,6 @@ static int sunxi_dsi_connector_enable(struct sunxi_drm_connector *conn,
 {
 	int ret = -1;
 	struct sunxi_drm_dsi *dsi = dev_get_priv(conn->dev);
-
-	/*drm_panel_prepare(dsi->panel);*/
-	dsi_clk_enable(&dsi->dsi_lcd, &dsi->dsi_para, 1);
-	if (dsi->slave)
-		dsi_clk_enable(&dsi->slave->dsi_lcd, &dsi->dsi_para, 1);
-	/*drm_panel_enable(dsi->panel);*/
 
 	ret = sunxi_dsi_enable_output(dsi);
 	if (ret < 0)

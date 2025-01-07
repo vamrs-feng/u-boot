@@ -74,29 +74,39 @@ DECLARE_GLOBAL_DATA_PTR;
 #define PIOC_o_DLEVEL			(16)
 #endif
 
-#define _PIO_REG_CFG(n, i) \
-		((volatile unsigned int *)((unsigned long)SUNXI_PIO_BASE + \
-		((n)-1) * PIOC_o_OFFSET + ((i)<<2) + PIOC_REG_o_CFG0))
-#define _PIO_REG_DLEVEL(n, i) \
-		((volatile unsigned int *)((unsigned long)SUNXI_PIO_BASE + \
-		((n)-1) * PIOC_o_OFFSET + ((i)<<2) + PIOC_REG_o_DRV0))
-#define _PIO_REG_PULL(n, i) \
-		((volatile unsigned int *)((unsigned long)SUNXI_PIO_BASE + \
-		((n)-1) * PIOC_o_OFFSET + ((i)<<2) + PIOC_REG_o_PUL0))
-#define _PIO_REG_DATA(n) \
-		((volatile unsigned int *)((unsigned long)SUNXI_PIO_BASE + \
-		((n)-1) * PIOC_o_OFFSET + PIOC_REG_o_DATA))
-
-#define _PIO_REG_CFG_VALUE(n, i) \
-		readl(IOMEM_ADDR(SUNXI_PIO_BASE + ((n)-1) * PIOC_o_OFFSET + ((i)<<2) + PIOC_REG_o_CFG0))
-#define _PIO_REG_DLEVEL_VALUE(n, i) \
-		readl(IOMEM_ADDR(SUNXI_PIO_BASE + ((n)-1) * PIOC_o_OFFSET + ((i)<<2) + PIOC_REG_o_DRV0))
-#define _PIO_REG_PULL_VALUE(n, i) \
-		readl(IOMEM_ADDR(SUNXI_PIO_BASE + ((n)-1) * PIOC_o_OFFSET + ((i)<<2) + PIOC_REG_o_PUL0))
-#define _PIO_REG_DATA_VALUE(n) \
-		readl(IOMEM_ADDR(SUNXI_PIO_BASE + ((n)-1) * PIOC_o_OFFSET + PIOC_REG_o_DATA))
+#ifdef CONFIG_MACH_SUN55IW3
+#define SUNXI_PK_BASE	0x2000500
+#define _PIO_REG_BASE(n) \
+		({ \
+			volatile unsigned int *reg; \
+			if (n == 11) \
+				reg = (volatile unsigned int *)((unsigned long)SUNXI_PK_BASE); \
+			else \
+				reg = ((volatile unsigned int *)((unsigned long)SUNXI_PIO_BASE + ((n)-1) * PIOC_o_OFFSET)); \
+			reg; \
+		})
+#else
 #define _PIO_REG_BASE(n) \
 		((volatile unsigned int *)((unsigned long)SUNXI_PIO_BASE +((n)-1) * PIOC_o_OFFSET))
+#endif
+
+#define _PIO_REG_CFG(n, i) \
+		((volatile unsigned int *)((unsigned long)_PIO_REG_BASE(n) + ((i)<<2) + PIOC_REG_o_CFG0))
+#define _PIO_REG_DLEVEL(n, i) \
+		((volatile unsigned int *)((unsigned long)_PIO_REG_BASE(n) + ((i)<<2) + PIOC_REG_o_DRV0))
+#define _PIO_REG_PULL(n, i) \
+		((volatile unsigned int *)((unsigned long)_PIO_REG_BASE(n) + ((i)<<2) + PIOC_REG_o_PUL0))
+#define _PIO_REG_DATA(n) \
+		((volatile unsigned int *)((unsigned long)_PIO_REG_BASE(n) + PIOC_REG_o_DATA))
+
+#define _PIO_REG_CFG_VALUE(n, i) \
+		readl(IOMEM_ADDR((unsigned long)_PIO_REG_BASE(n) + ((i)<<2) + PIOC_REG_o_CFG0))
+#define _PIO_REG_DLEVEL_VALUE(n, i) \
+		readl(IOMEM_ADDR((unsigned long)_PIO_REG_BASE(n) + ((i)<<2) + PIOC_REG_o_DRV0))
+#define _PIO_REG_PULL_VALUE(n, i) \
+		readl(IOMEM_ADDR((unsigned long)_PIO_REG_BASE(n) + ((i)<<2) + PIOC_REG_o_PUL0))
+#define _PIO_REG_DATA_VALUE(n) \
+		readl(IOMEM_ADDR((unsigned long)_PIO_REG_BASE(n) + PIOC_REG_o_DATA))
 
 #ifdef SUNXI_R_PIO_BASE
 #define _R_PIO_REG_CFG(n, i)                                                   \

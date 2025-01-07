@@ -29,6 +29,10 @@
 #include <sunxi_board.h>
 #include "sprite.h"
 
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+#include <sunxi_dual_storage.h>
+#endif
+
 #ifdef CONFIG_SUNXI_SPRITE_CARTOON
 #include "./cartoon/sprite_cartoon.h"
 #endif
@@ -903,6 +907,9 @@ int sunxi_sprite_deal_boot0(int production_media)
 		printf("err: unable to malloc memory\n");
 		return -1;
 	}
+#ifdef CONFIG_SUNXI_DUAL_STORAGE
+	sunxi_fdt_get_boot_storage_type(&production_media);
+#endif
 	if (gd->bootfile_mode == SUNXI_BOOT_FILE_NORMAL ||
 	    gd->bootfile_mode == SUNXI_BOOT_FILE_PKG) {
 		if (production_media == STORAGE_NAND) {

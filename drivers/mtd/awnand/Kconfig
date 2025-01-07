@@ -22,7 +22,6 @@ config AW_MTD_RAWNAND
 	depends on ARCH_SUNXI
 	select SUNXI_UBIFS
 	select SUNXI_NAND
-	select SUNXI_COMM_NAND_V1
 	select MTD_DEVICE
 	select CMD_MTDPARTS
 	select CMD_UBIFS
