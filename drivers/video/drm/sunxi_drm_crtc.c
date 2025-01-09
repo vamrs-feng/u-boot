@@ -395,6 +395,15 @@ static int sunxi_crtc_enable(struct display_state *state)
 	cfg.color_space = scrtc_state->color_space;
 	cfg.color_range = scrtc_state->color_range;
 	cfg.data_bits = scrtc_state->data_bits;
+	if ((scrtc_state->pixel_mode != 0) && (scrtc_state->pixel_mode != 1)
+	    && (scrtc_state->pixel_mode != 2) && (scrtc_state->pixel_mode != 4)
+	    && (scrtc_state->pixel_mode != 8)) {
+		DRM_ERROR("pixel_mode set for crtc is not support:%d, use default 1 pixel mode\n",
+			  scrtc_state->pixel_mode);
+		cfg.pixel_mode = 1;
+	} else {
+		cfg.pixel_mode = scrtc_state->pixel_mode;
+	}
 
 	if (sunxi_de_enable(scrtc->sunxi_de, &cfg) < 0)
 		pr_err("sunxi_de_enable failed\n");

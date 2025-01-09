@@ -33,7 +33,8 @@
 #include "sunxi_drm_crtc.h"
 #include "sunxi_drm_drv.h"
 
-#if IS_ENABLED(CONFIG_MACH_SUN55IW6)
+#if IS_ENABLED(CONFIG_MACH_SUN55IW6) || IS_ENABLED(CONFIG_MACH_SUN60IW2) \
+	|| IS_ENABLED(CONFIG_MACH_SUN65IW1) || IS_ENABLED(CONFIG_MACH_SUN55IW3)
 #define LVDS_DISPLL_CLK
 #endif
 struct lvds_data {
@@ -46,6 +47,7 @@ struct sunxi_drm_lvds {
 	struct drm_display_mode mode;
 	struct disp_lvds_para lvds_para;
 	unsigned int tcon_id;
+	unsigned int tcon_top_id;
 	//struct drm_panel *panel;
 	//struct drm_bridge *bridge;
 	bool bound;
@@ -211,6 +213,7 @@ static int sunxi_lvds_connector_init(struct sunxi_drm_connector *conn,
 	struct crtc_state *scrtc_state = &state->crtc_state;
 
 	scrtc_state->tcon_id = lvds->tcon_id;
+	scrtc_state->tcon_top_id = lvds->tcon_top_id;
 	scrtc_state->enable_vblank = sunxi_lvds_enable_vblank;
 	scrtc_state->check_status = sunxi_lvds_fifo_check;
 	scrtc_state->vblank_enable_data = lvds;
@@ -311,6 +314,7 @@ static int sunxi_drm_lvds_probe(struct udevice *dev)
 		return -1;
 	}
 	lvds->tcon_id = sunxi_tcon_of_get_id(lvds->tcon_dev);
+	lvds->tcon_top_id = sunxi_tcon_of_get_top_id(lvds->tcon_dev);
 	lvds->phy0 = kmalloc(sizeof(struct phy), __GFP_ZERO);
 	lvds->phy1 = kmalloc(sizeof(struct phy), __GFP_ZERO);
 	if (!lvds->phy0 || !lvds->phy1) {

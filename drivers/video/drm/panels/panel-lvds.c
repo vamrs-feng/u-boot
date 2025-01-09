@@ -69,7 +69,7 @@ static int panel_lvds_prepare(struct sunxi_drm_panel *panel)
 	DRM_INFO("%s\n", __func__);
 	for (i = 0; i < POWER_MAX; i++) {
 		if (lvds->supply[i]) {
-			err = sunxi_drm_power_enable(lvds->supply[i]);
+			err = sunxi_drm_power_enable(lvds->supply[i], 0);
 			if (err < 0) {
 				DRM_ERROR("failed to enable supply%d: %d\n",
 					i, err);

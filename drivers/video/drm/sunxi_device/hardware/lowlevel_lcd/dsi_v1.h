@@ -17,6 +17,7 @@
 #include "dsi_v1_type.h"
 #include <drm/drm_mipi_dsi.h>
 #include <drm_mipi_dsi.h>
+#include "dsc_type.h"
 //#include "tcon_lcd.h"
 
 
@@ -28,6 +29,7 @@ extern u32 dsi_bits_per_pixel[4];
 struct sunxi_dsi_lcd {
 	int dsi_index;
 	volatile struct dsi_lcd_reg *reg;
+	volatile struct dsc_dsi_reg *dsc_reg;
 };
 
 enum disp_lcd_frm {
@@ -237,7 +239,7 @@ enum __dsi_inst_packet_t {
 };
 
 
-s32 dsi_open_hs_mode(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *dsi_para);
+s32 dsi_open(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *dsi_para);
 s32 dsi_dcs_wr(struct sunxi_dsi_lcd *dsi, u8 *para_p, u32 para_num);
 s32 dsi_dcs_rd(struct sunxi_dsi_lcd *dsi, u8 *para_p, u32 num_p);
 void dsi_enable_vblank(struct sunxi_dsi_lcd *dsi, bool enable);
@@ -251,6 +253,7 @@ s32 dsi_inst_busy(struct sunxi_dsi_lcd *dsi);
 s32 dsi_tri_start(struct sunxi_dsi_lcd *dsi);
 u32 dsi_get_start_delay(struct sunxi_dsi_lcd *dsi);
 u32 dsi_get_cur_line(struct sunxi_dsi_lcd *dsi);
+s32 dsi_clk_enable(struct sunxi_dsi_lcd *dsi, struct disp_dsi_para *para, u32 en);
 s32 dsi_irq_enable(struct sunxi_dsi_lcd *dsi, enum __dsi_irq_id_t id);
 s32 dsi_irq_disable(struct sunxi_dsi_lcd *dsi, enum __dsi_irq_id_t id);
 s32 dsi_dcs_rd_memory(struct sunxi_dsi_lcd *dsi, u32 *p_data, u32 length);
@@ -260,5 +263,7 @@ u16 dsi_crc_pro_pd_repeat(u8 pd, u32 pd_bytes);
 u16 dsi_crc_pro(u8 *pd_p, u32 pd_bytes);
 s32 dsi_mode_switch(struct sunxi_dsi_lcd *dsi, __u32 cmd_en, __u32 lp_en);
 s32 dsi_get_status(struct sunxi_dsi_lcd *dsi);
-
+s32 dsc_set_reg_base(struct sunxi_dsi_lcd *dsi, uintptr_t base);
+void dsc_config_pps(struct sunxi_dsi_lcd *dsi, const struct drm_dsc_config *dsc_cfg);
+void dec_dsc_config(struct sunxi_dsi_lcd *dsi, struct disp_video_timings *timings);
 #endif

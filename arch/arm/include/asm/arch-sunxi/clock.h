@@ -86,6 +86,7 @@ uint clock_get_apb1(void);
 uint clock_get_apb2(void);
 uint clock_get_axi(void);
 uint clock_get_mbus(void);
+uint get_hosc(void);
 void clock_open_timer(int timernum);
 void clock_close_timer(int timernum);
 void clock_set_gic(void);

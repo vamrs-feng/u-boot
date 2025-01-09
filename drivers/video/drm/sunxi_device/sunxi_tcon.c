@@ -321,7 +321,6 @@ static int sunxi_tcon_rgb_mode_init(struct udevice *dev)
 	struct tcon_device *tcon = &hwtcon->tcon_ctrl;
 	struct disp_rgb_para *rgb_para = &tcon->cfg.rgb_para;
 	unsigned int tcon_div = hwtcon->tcon_ctrl.cfg.tcon_lcd_div;
-	bool displl_clk = hwtcon->tcon_ctrl.cfg.displl_clk;
 
 	DRM_INFO("[RGB] %s start\n", __FUNCTION__);
 	ret = sunxi_tcon_lcd_prepare(hwtcon, rgb_para->timings.pixel_clk * tcon_div);
@@ -332,8 +331,7 @@ static int sunxi_tcon_rgb_mode_init(struct udevice *dev)
 	if (!tcon->cfg.sw_enable) {
 		tcon_lcd_init(&hwtcon->tcon_lcd);
 		tcon_lcd_set_dclk_div(&hwtcon->tcon_lcd, tcon_div);
-		if (displl_clk)
-			tcon_lcd_dsi_clk_source(hwtcon->id, 0);
+		tcon_lcd_dsi_clk_source(hwtcon->id, 0);
 		if (tcon_rgb_cfg(&hwtcon->tcon_lcd, rgb_para) != 0) {
 			DRM_ERROR("lcd-rgb cfg fail!\n");
 			return -1;
@@ -730,6 +728,7 @@ static int sunxi_tcon_edp_mode_init(struct udevice *dev)
 	struct disp_video_timings *timings = &hwtcon->tcon_ctrl.cfg.timing;
 	unsigned int de_id = hwtcon->tcon_ctrl.cfg.de_id;
 	bool sw_enable = hwtcon->tcon_ctrl.cfg.sw_enable;
+	unsigned int pixel_mode = hwtcon->tcon_ctrl.cfg.pixel_mode;
 
 	if (hwtcon->is_enabled) {
 		DRM_WARN("tcon edp has been enable!\n");
@@ -738,11 +737,12 @@ static int sunxi_tcon_edp_mode_init(struct udevice *dev)
 
 	edp_tcon_clk_enable(hwtcon);
 	if (hwtcon->mclk)
-		clk_set_rate(hwtcon->mclk, timings->pixel_clk);
+		clk_set_rate(hwtcon->mclk, timings->pixel_clk / pixel_mode);
 
 	if (!sw_enable) {
 		tcon_tv_init(&hwtcon->tcon_tv);
 		tcon_tv_set_timming(&hwtcon->tcon_tv, timings);
+		tcon_tv_set_pixel_mode(&hwtcon->tcon_tv, pixel_mode);
 
 		tcon_tv_src_select(&hwtcon->tcon_tv, LCD_SRC_DE, de_id);
 
@@ -944,6 +944,12 @@ OUT:
 	of_node_put(tcon_in_disp0_ep);
 	of_node_put(disp0_output_ep);
 	return id;
+}
+
+int sunxi_tcon_of_get_top_id(struct udevice *tcon_dev)
+{
+	struct sunxi_tcon *tcon = dev_get_priv(tcon_dev);
+	return sunxi_tcon_top_get_id(tcon->tcon_top);
 }
 
 int sunxi_tcon_mode_init(struct udevice *tcon_dev, struct disp_output_config *disp_cfg)

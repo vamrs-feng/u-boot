@@ -36,7 +36,13 @@ struct general_panel {
 	ulong enable_gpio[GPIO_MAX];
 	ulong reset_gpio;
 #endif
+	unsigned int power_delay_ms;
 };
+
+static void general_panel_sleep(int msec)
+{
+	mdelay(msec);
+}
 
 static inline struct general_panel *to_general_panel(struct sunxi_drm_panel *panel)
 {
@@ -82,14 +88,14 @@ static int general_panel_prepare(struct sunxi_drm_panel *panel)
 #ifdef DRM_USE_DM_POWER
 			err = regulator_set_enable(edp_panel->supply[i], true);
 #else
-			err = sunxi_drm_power_enable(edp_panel->supply[i]);
+			err = sunxi_drm_power_enable(edp_panel->supply[i], 0);
 #endif
 			if (err < 0) {
 				dev_err(edp_panel->dev, "failed to enable supply%d: %d\n",
 					i, err);
 				return err;
 			}
-			mdelay(10);
+			general_panel_sleep(edp_panel->power_delay_ms);
 		}
 	}
 
@@ -195,6 +201,10 @@ static int general_panel_parse_dts(struct general_panel *edp_panel)
 			edp_panel->enable_gpio[i] = ret;
 		}
 	}
+
+	ret = dev_read_u32(dev, "power-delay-ms", &edp_panel->power_delay_ms);
+	if (ret)
+		edp_panel->power_delay_ms = 10;
 
 	ret = sunxi_drm_gpio_request(dev, "reset-gpios");
 	if (ret < 0) {
