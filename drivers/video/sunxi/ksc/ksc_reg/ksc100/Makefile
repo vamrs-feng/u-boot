@@ -1,1 +1,0 @@
-ksc100_reg_obj = ksc_reg.o tvdisp.o

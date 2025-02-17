@@ -26,10 +26,6 @@
 u32 loglevel_debug;
 
 static const struct drm_display_mode edp_standard_modes[] = {
-	/* dmt: 0x52 - 1920x1080@60Hz */
-	{ DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED, 148500, 1920, 2008,
-		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
-		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC) },
 	/* dmt: 0x55 - 1280x720@60Hz */
 	{ DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1390,
 		   1430, 1650, 0, 720, 725, 730, 750, 0,
@@ -38,6 +34,10 @@ static const struct drm_display_mode edp_standard_modes[] = {
 	{ DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1720,
 		   1760, 1980, 0, 720, 725, 730, 750, 0,
 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
+	/* dmt: 0x52 - 1920x1080@60Hz */
+	{ DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED, 148500, 1920, 2008,
+		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
+		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC) },
 	/* cea: 31 - 1920x1080@50Hz 16:9 */
 	{ DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 148500, 1920, 2448,
 		   2492, 2640, 0, 1080, 1084, 1089, 1125, 0,
@@ -324,9 +324,9 @@ void edp_parse_dpcd(struct sunxi_drm_edp *drm_edp, char *dpcd_rx_buf)
 			sink_cap->assr_support = false;
 
 		if (dpcd_rx_buf[0x0d] & EDP_DPCD_FRAME_CHANGE_MASK)
-			sink_cap->framing_change_support = true;
+			sink_cap->enhance_frame_support = true;
 		else
-			sink_cap->framing_change_support = false;
+			sink_cap->enhance_frame_support = false;
 
 	} else {
 		sink_cap->is_edp_device = false;
@@ -395,8 +395,6 @@ static s32 edp_clk_enable(struct sunxi_drm_edp *drm_edp, bool en)
 				return ret;
 			}
 		}
-		edp_set_use_inner_clk(&drm_edp->edp_hw, ((drm_edp->use_inner_clk) && en));
-
 	} else {
 		if (!IS_ERR_OR_NULL(drm_edp->clk_24m))
 			clk_disable(drm_edp->clk_24m);
@@ -406,8 +404,6 @@ static s32 edp_clk_enable(struct sunxi_drm_edp *drm_edp, bool en)
 
 		if (!IS_ERR_OR_NULL(drm_edp->clk_bus))
 			clk_disable(drm_edp->clk_bus);
-
-		edp_set_use_inner_clk(&drm_edp->edp_hw, ((drm_edp->use_inner_clk) && en));
 	}
 
 	return ret;
@@ -440,6 +436,7 @@ static void edp_phy_init(struct sunxi_drm_edp *drm_edp)
 {
 	// the phy has only one user such as aux/dp,
 	// we can init it when edp driver need.
+
 	if (drm_edp->aux_phy)
 		generic_phy_init(drm_edp->aux_phy);
 
@@ -447,9 +444,9 @@ static void edp_phy_init(struct sunxi_drm_edp *drm_edp)
 	 * we can use 4lane as default, phy para will update
 	 * when training start
 	 */
-	/* if (drm_edp->combo_phy)
-		phy_set_mode_ext(drm_edp->combo_phy, PHY_MODE_DP, DP_2LANE | USB);
-		phy_set_mode(drm_edp->combo_phy, PHY_MODE_DP); */
+	if (drm_edp->combo_phy)
+//		phy_set_mode_ext(drm_edp->combo_phy, PHY_MODE_DP, DP_2LANE | USB);
+//		phy_set_mode(drm_edp->combo_phy, PHY_MODE_DP);
 
 	if (drm_edp->dp_phy) {
 		generic_phy_init(drm_edp->dp_phy);
@@ -690,12 +687,6 @@ s32 edp_misc_parse(struct udevice *dev)
 	else
 		edp_core->psr_en = 0;
 
-	ret = ofnode_read_u32(dev->node, "pclk_limit", &value);
-	if (!ret)
-		edp_core->pclk_limit_khz = value;
-	else
-		edp_core->pclk_limit_khz = 0;
-
 	return RET_OK;
 }
 
@@ -727,25 +718,18 @@ s32 edp_lane_para_parse(struct udevice *dev)
 			lane_para->bit_rate = BIT_RATE_5G4;
 			break;
 		default:
-			EDP_ERR("edp_lane_rate out of range, set to default: 2.7G!\n");
-			lane_para->bit_rate = BIT_RATE_2G7;
+			EDP_ERR("edp_rate out of range!\n");
+			return RET_FAIL;
 		}
-	} else {
-		EDP_ERR("edp_lane_rate not set manaually, set to default: 2.7G!\n");
-		lane_para->bit_rate = BIT_RATE_2G7;
 	}
 
 	ret = ofnode_read_u32(dev->node, "edp_lane_cnt", &value);
 	if (!ret) {
 		if ((value <= 0) || (value == 3) || (value > 4)) {
-			EDP_ERR("edp_lane_cnt out of range, set to default: 2!\n");
-			lane_para->lane_cnt = 2;
-		} else {
-			lane_para->lane_cnt = value;
+			EDP_ERR("edp_lane_cnt out of range!\n");
+			return RET_FAIL;
 		}
-	} else {
-		EDP_ERR("edp_lane_cnt not set manaually, set to default: 2!\n");
-		lane_para->lane_cnt = 2;
+		lane_para->lane_cnt = value;
 	}
 
 	ret = ofnode_read_u32(dev->node, "edp_colordepth", &value);
@@ -1381,16 +1365,12 @@ static ssize_t source_info_show(struct udevice *dev,
 			 src_cap->assr_support ? "Yes" : "No");
 	count += sprintf(buf + count, "PSR Support: %s\n",\
 			 src_cap->psr_support ? "Yes" : "No");
-	count += sprintf(buf + count, "MST Support: %s\n",\
+	count += sprintf(buf + count, "MST Support: %s\n\n",\
 			 src_cap->mst_support ? "Yes" : "No");
-	count += sprintf(buf + count, "Enhance Frame Support: %s\n\n",\
-			 src_cap->enhance_frame_support ? "Yes" : "No");
 
 	edp_hw_get_lane_para(edp_hw, &tmp_lane_para);
 
 	count += sprintf(buf + count, "[Link Info]\n");
-	count += sprintf(buf + count, "Pixel Mode: %d\n",\
-			 edp_hw_get_pixel_mode(edp_hw));
 	count += sprintf(buf + count, "Bit Rate: %lld\n",\
 			 tmp_lane_para.bit_rate);
 	count += sprintf(buf + count, "Lane Count: %d\n",\
@@ -1793,7 +1773,8 @@ static ssize_t aux_i2c_read_show(struct udevice *dev,
 	i2c_addr = edp_debug->aux_i2c_addr;
 	len = edp_debug->aux_i2c_len;
 
-#if IS_ENABLED(CONFIG_AW_DRM_INNO_EDP13)
+#if IS_ENABLED(CONFIG_DISP_PHY_INNO_EDP_1_3) || \
+	IS_ENABLED(CONFIG_DISP_PHY_INNO_EDP_1_3_MODULE)
 	edp_hw_aux_i2c_write(edp_hw, i2c_addr, 0, 1, &tmp_rx_buf[0]);
 #endif
 
@@ -2290,10 +2271,6 @@ void sunxi_edp_get_source_capacity(struct sunxi_drm_edp *drm_edp)
 	src_cap->hdcp2x_support = edp_source_support_hdcp2x(edp_hw);
 	src_cap->hardware_hdcp1x_support = edp_source_support_hardware_hdcp1x(edp_hw);
 	src_cap->hardware_hdcp2x_support = edp_source_support_hardware_hdcp2x(edp_hw);
-	src_cap->enhance_frame_support = edp_source_support_enhance_frame(edp_hw);
-	src_cap->lane_remap_support = edp_source_support_lane_remap(edp_hw);
-	src_cap->lane_invert_support = edp_source_support_lane_invert(edp_hw);
-	src_cap->muti_pixel_mode_support = edp_source_support_muti_pixel_mode(edp_hw);
 
 //	if (edp_source_support_hdcp1x(edp_hw) ||
 //		    edp_source_support_hdcp2x(edp_hw)) {
@@ -2320,27 +2297,22 @@ int sunxi_edp_init_hardware(struct sunxi_drm_edp *drm_edp)
 int edp_parse_dts(struct sunxi_drm_edp *drm_edp)
 {
 	int ret = 0;
-	fdt_addr_t addr;
 	struct sunxi_edp_hw_desc *edp_hw = &drm_edp->edp_hw;
 	struct udevice *dev = drm_edp->dev;
 
-	addr = dev_read_addr_index(dev, 0);
-	if (addr == FDT_ADDR_T_NONE) {
+	drm_edp->base_addr = (ulong)dev_read_addr_index(dev, 0);
+	if (!drm_edp->base_addr) {
 		EDP_DEV_ERR(dev, "fail to get addr for edp!\n");
 		ret = RET_FAIL;
 		goto OUT;
-	} else {
-		drm_edp->base_addr = (ulong)addr;
+	} else
 		edp_hw_set_reg_base(edp_hw, drm_edp->base_addr);
-	}
 
-	addr = dev_read_addr_index(dev, 1);
-	if (addr == FDT_ADDR_T_NONE) {
+	drm_edp->top_addr = (ulong)dev_read_addr_index(dev, 1);
+	if (!drm_edp->top_addr)
 		EDP_DBG("Maybe there is no top addr for edp!\n");
-	} else {
-		drm_edp->top_addr = (ulong)addr;
+	else
 		edp_hw_set_top_base(edp_hw, drm_edp->top_addr);
-	}
 
 	drm_edp->irq = sunxi_of_get_irq_number(dev, 0);
 	if (!drm_edp->irq) {
@@ -2359,16 +2331,9 @@ int edp_parse_dts(struct sunxi_drm_edp *drm_edp)
 	drm_edp->clk = clk_get_by_name(dev, "clk_edp");
 	if (IS_ERR_OR_NULL(drm_edp->clk)) {
 		EDP_DEV_ERR(dev, "fail to get clk for edp!\n");
-		drm_edp->clk = NULL;
-		/* ret = RET_FAIL; */
-		/* goto ERR_CLK_BUS; */
+		ret = RET_FAIL;
+		goto ERR_CLK_BUS;
 	}
-
-	ret = dev_read_u32(dev, "use_inner_clk", &drm_edp->use_inner_clk);
-	if (!ret)
-		drm_edp->use_inner_clk = 1;
-	else
-		drm_edp->use_inner_clk = 0;
 
 	drm_edp->clk_24m = clk_get_by_name(dev, "clk_24m_edp");
 	if (IS_ERR_OR_NULL(drm_edp->clk_24m)) {
@@ -2407,25 +2372,22 @@ int edp_parse_dts(struct sunxi_drm_edp *drm_edp)
 
 	// sync phy handle to exp_tx_core because phy para need
 	// update during training procedure
-	drm_edp->dp_phy = devm_kzalloc(dev, sizeof(struct phy), GFP_KERNEL);
-	drm_edp->aux_phy = devm_kzalloc(dev, sizeof(struct phy), GFP_KERNEL);
-	drm_edp->combo_phy = devm_kzalloc(dev, sizeof(struct phy), GFP_KERNEL);
-	ret = sunxi_phy_get_by_name(dev, "dp-phy", drm_edp->dp_phy);
-	if (ret) {
+	generic_phy_get_by_name(dev, "dp-phy", drm_edp->dp_phy);
+	if (IS_ERR_OR_NULL(drm_edp->dp_phy)) {
 		DRM_INFO("edp's dp-phy not setting, maybe not used!\n");
 		drm_edp->dp_phy = NULL;
 	} else
 		drm_edp->edp_core.dp_phy = drm_edp->dp_phy;
 
-	ret = sunxi_phy_get_by_name(dev, "aux-phy", drm_edp->aux_phy);
-	if (ret) {
+	generic_phy_get_by_name(dev, "aux-phy", drm_edp->aux_phy);
+	if (IS_ERR_OR_NULL(drm_edp->aux_phy)) {
 		DRM_INFO("edp's aux-phy not setting, maybe not used!\n");
 		drm_edp->aux_phy = NULL;
 	} else
 		drm_edp->edp_core.aux_phy = drm_edp->aux_phy;
 
-	ret = sunxi_phy_get_by_name(dev, "combo-phy", drm_edp->combo_phy);
-	if (ret) {
+	generic_phy_get_by_name(dev, "combo-phy", drm_edp->combo_phy);
+	if (IS_ERR_OR_NULL(drm_edp->combo_phy)) {
 		DRM_INFO("edp's combo-phy not setting, maybe not used!\n");
 		drm_edp->combo_phy = NULL;
 	} else
@@ -2448,8 +2410,8 @@ int edp_parse_dts(struct sunxi_drm_edp *drm_edp)
 ERR_CLK:
 	if (drm_edp->clk_24m)
 		clk_put(drm_edp->clk_24m);
-	if (!IS_ERR_OR_NULL(drm_edp->clk))
-		clk_put(drm_edp->clk);
+	clk_put(drm_edp->clk);
+ERR_CLK_BUS:
 	clk_put(drm_edp->clk_bus);
 ERR_IOMAP:
 	if (drm_edp->base_addr)
@@ -2458,25 +2420,6 @@ OUT:
 	return ret;
 
 }
-
-void edp_adjust_pixel_mode(struct sunxi_drm_edp *drm_edp)
-{
-	struct edp_tx_cap *src_cap = &drm_edp->source_cap;
-	struct edp_tx_core *edp_core = &drm_edp->edp_core;
-	unsigned int pixel_clk = edp_core->timings.pixel_clk / 1000; /*kHz*/
-
-	/* reset pixel mode */
-	edp_core->pixel_mode = 1;
-
-	if (src_cap->muti_pixel_mode_support && edp_core->pclk_limit_khz != 0) {
-		while (pixel_clk > edp_core->pclk_limit_khz) {
-			pixel_clk /= 2;
-			edp_core->pixel_mode *= 2;
-			EDP_DRV_DBG("adjust pixel mode: pixel_clk:%d pixel_mode:%d\n", pixel_clk, edp_core->pixel_mode);
-		}
-	}
-}
-
 
 static int populate_mode_from_default_timings(struct sunxi_drm_connector *connector)
 {
@@ -2554,7 +2497,6 @@ static int sunxi_edp_connector_get_edid_timings(struct sunxi_drm_connector *conn
 	struct drm_display_mode *sel_mode = &conn_state->mode;
 	struct edid *edid;
 	s32 ret, mode_cnt = 0;
-	s32 mode_num = 0;
 
 	memset(&dpcd_rx_buf[0], 0, sizeof(dpcd_rx_buf));
 	ret = edp_read_dpcd(edp_hw, &dpcd_rx_buf[0]);
@@ -2566,20 +2508,20 @@ static int sunxi_edp_connector_get_edid_timings(struct sunxi_drm_connector *conn
 	edid = drm_do_get_edid(&drm_edp->connector, edp_get_edid_block, &drm_edp->edp_hw);
 	if (edid == NULL) {
 		EDP_WRN("fail to read edid\n");
-	} else {
-		edp_core->edid = edid;
-		edp_parse_edid(drm_edp, edid);
-		/* for edp panel, always has only one detailed-timings stored in edid */
-		mode_num += drm_add_edid_modes(connector, edid);
+		return -1;
 	}
+
+	if (!edid)
+		EDP_WRN("edid is null\n");
+
+	edp_core->edid = edid;
+	edp_parse_edid(drm_edp, edid);
+
+	/* for edp panel, always has only one detailed-timings stored in edid */
+	drm_add_edid_modes(connector, edid);
 
 	/* update lane config to adjust source-sink capacity */
 	edp_update_capacity(drm_edp);
-
-	if (!mode_num) {
-		EDP_WRN("Neither dts timing nor edid timing detect, use default tmings!\n");
-		mode_num += populate_mode_from_default_timings(connector);
-	}
 
 	list_for_each_entry(mode, &connector->probed_modes, head) {
 		mode_cnt++;
@@ -2616,19 +2558,8 @@ sunxi_edp_connector_mode_valid(struct sunxi_drm_connector *connector,
 	struct disp_video_timings timings;
 	s32 ret = 0;
 	struct sunxi_edp_hw_desc *edp_hw = &drm_edp->edp_hw;
-	char dpcd_rx_buf[576];
 
 	drm_mode_to_sunxi_video_timings(mode, &timings);
-
-	memset(&dpcd_rx_buf[0], 0, sizeof(dpcd_rx_buf));
-	ret = edp_read_dpcd(edp_hw, &dpcd_rx_buf[0]);
-	if (ret < 0)
-		EDP_WRN("fail to read edp dpcd!\n");
-	else
-		edp_parse_dpcd(drm_edp, &dpcd_rx_buf[0]);
-
-	/* update lane config to adjust source-sink capacity */
-	edp_update_capacity(drm_edp);
 
 	ret = edp_hw_query_lane_capability(edp_hw, &drm_edp->edp_core, &timings);
 	if (ret) {
@@ -2680,7 +2611,6 @@ static int sunxi_edp_connector_init(struct sunxi_drm_connector *connector,
 	struct sunxi_drm_edp *drm_edp = dev_get_priv(connector->dev);
 
 	scrtc_state->tcon_id = drm_edp->tcon_id;
-	scrtc_state->tcon_top_id = drm_edp->tcon_top_id;
 	scrtc_state->enable_vblank = sunxi_edp_enable_vblank;
 	scrtc_state->check_status = sunxi_edp_fifo_check;
 	scrtc_state->vblank_enable_data = drm_edp;
@@ -2698,16 +2628,12 @@ static int sunxi_edp_connector_prepare(struct sunxi_drm_connector *connector,
 {
 	struct sunxi_drm_edp *drm_edp = dev_get_priv(connector->dev);
 	struct connector_state *conn_state = &state->conn_state;
-	struct crtc_state *scrtc_state = &state->crtc_state;
 	struct edp_tx_core *edp_core = &drm_edp->edp_core;
 	int fps = 0;
 
 	memcpy(&drm_edp->mode, &conn_state->mode, sizeof(struct drm_display_mode));
 
 	drm_mode_to_sunxi_video_timings(&drm_edp->mode, &edp_core->timings);
-
-	edp_adjust_pixel_mode(drm_edp);
-	scrtc_state->pixel_mode = edp_core->pixel_mode;
 
 	fps = edp_core->timings.pixel_clk / edp_core->timings.hor_total_time
 		/ edp_core->timings.ver_total_time;
@@ -2742,7 +2668,6 @@ int sunxi_edp_connector_enable(struct sunxi_drm_connector *connector,
 	disp_cfg.de_id = de_hw_id;
 	disp_cfg.irq_handler = scrtc_state->crtc_irq_handler;
 	disp_cfg.irq_data = state;
-	disp_cfg.pixel_mode = edp_core->pixel_mode;
 
 	sunxi_tcon_mode_init(drm_edp->tcon_dev, &disp_cfg);
 
@@ -2817,12 +2742,12 @@ s32 drm_edp_output_enable_early(struct sunxi_drm_edp *drm_edp)
 		ret = regulator_set_enable(drm_edp->vcc_regulator, true);
 		if (ret) {
 			EDP_ERR("vcc-edp enable failed!\n");
-			goto OUT;
+			goto ERR_VCC;
 		}
 	}
 #else
 	if (drm_edp->vdd_regulator) {
-		ret = sunxi_drm_power_enable(drm_edp->vdd_regulator, 0);
+		ret = sunxi_drm_power_enable(drm_edp->vdd_regulator);
 		if (ret) {
 			EDP_ERR("vdd-edp enable failed!\n");
 			goto OUT;
@@ -2830,10 +2755,10 @@ s32 drm_edp_output_enable_early(struct sunxi_drm_edp *drm_edp)
 	}
 
 	if (drm_edp->vcc_regulator) {
-		ret = sunxi_drm_power_enable(drm_edp->vcc_regulator, 0);
+		ret = sunxi_drm_power_enable(drm_edp->vcc_regulator);
 		if (ret) {
 			EDP_ERR("vcc-edp enable failed!\n");
-			goto OUT;
+			goto ERR_VCC;
 		}
 	}
 
@@ -2842,14 +2767,31 @@ s32 drm_edp_output_enable_early(struct sunxi_drm_edp *drm_edp)
 	ret = edp_clk_enable(drm_edp, true);
 	if (ret) {
 		EDP_ERR("edp edp_clk_enable fail!!\n");
-		goto OUT;
+		goto ERR_CLK;
 	}
 
-	edp_phy_init(drm_edp);
 	edp_phy_enable(drm_edp, true);
+	edp_phy_init(drm_edp);
 
 	edp_hw_controller_init(edp_hw, edp_core);
+
 	return RET_OK;
+
+#ifdef DRM_USE_DM_POWER
+ERR_CLK:
+	if (drm_edp->vcc_regulator)
+		regulator_set_enable(drm_edp->vcc_regulator, false);
+ERR_VCC:
+	if (drm_edp->vdd_regulator)
+		regulator_set_enable(drm_edp->vdd_regulator, false);
+#else
+ERR_CLK:
+	if (drm_edp->vcc_regulator)
+		ret = sunxi_drm_power_disable(drm_edp->vcc_regulator);
+ERR_VCC:
+	if (drm_edp->vdd_regulator)
+		ret = sunxi_drm_power_disable(drm_edp->vdd_regulator);
+#endif
 OUT:
 	return ret;
 }
@@ -2865,15 +2807,14 @@ s32 drm_edp_output_enable(struct sunxi_drm_edp *drm_edp)
 
 	if (!edp_core->timings.pixel_clk) {
 		EDP_ERR("timing is not set by edid or dts, please check!\n");
-		goto OUT;
+		goto ERR_PHY;
 	}
 
-	if (!IS_ERR_OR_NULL(drm_edp->clk))
-		clk_set_rate(drm_edp->clk, edp_core->timings.pixel_clk / edp_core->pixel_mode);
+	clk_set_rate(drm_edp->clk, edp_core->timings.pixel_clk);
 	ret = edp_hw_enable(edp_hw, edp_core);
 	if (ret) {
 		EDP_ERR("edp core enable failed!\n");
-		goto OUT;
+		goto ERR_PHY;
 	}
 
 	if (src_cap->ssc_support) {
@@ -2887,37 +2828,28 @@ s32 drm_edp_output_enable(struct sunxi_drm_edp *drm_edp)
 	if (!edp_core->controller_mode && sink_cap->assr_support && src_cap->assr_support) {
 		ret = edp_hw_assr_enable(edp_hw, true);
 		if (ret < 0)
-			goto OUT;
+			goto ERR_PHY;
 	}
-
-	if (src_cap->enhance_frame_support && sink_cap->enhance_frame_support)
-		edp_hw_enhance_frame_enable(edp_hw, true);
 
 	/* set color space, color depth */
 	ret = edp_hw_set_video_format(edp_hw, edp_core);
 	if (ret < 0)
-		goto OUT;
+		goto ERR_PHY;
 
 	/* set specific timings */
 	ret = edp_hw_set_video_timings(edp_hw, &edp_core->timings);
 	if (ret < 0)
-		goto OUT;
+		goto ERR_PHY;
 
 	/* set transfer unit */
 	ret = edp_hw_set_transfer_config(edp_hw, edp_core);
 	if (ret < 0)
-		goto OUT;
-
-	if (src_cap->muti_pixel_mode_support) {
-		ret = edp_hw_set_pixel_mode(edp_hw, edp_core->pixel_mode);
-		if (ret < 0)
-			goto OUT;
-	}
+		goto ERR_PHY;
 
 	if (!edp_debug->bypass_training) {
 		ret = edp_main_link_setup(edp_hw, edp_core);
 		if (ret < 0)
-			goto OUT;
+			goto ERR_PHY;
 	}
 
 	edp_hw_link_start(edp_hw);
@@ -2927,8 +2859,39 @@ s32 drm_edp_output_enable(struct sunxi_drm_edp *drm_edp)
 //	if (drm_edp->use_dpcd && edp_source_support_hdcp1x(edp_hw) && dprx_hdcp1_capable(&drm_edp->hdcp))
 //		sunxi_dp_hdcp1_enable(&drm_edp->hdcp);
 
+	return ret;
 
-OUT:
+ERR_PHY:
+//FIXME: if need not release resource for debug in console cmd
+//	if (edp_core->edid) {
+//		edp_edid_put(edp_core->edid);
+//		edp_core->edid = NULL;
+//	}
+//	drm_edp->dpcd_parsed = false;
+//
+//	sink_cap_reset(drm_edp);
+//
+//	edp_phy_exit(drm_edp);
+//	edp_phy_enable(drm_edp, false);
+//
+//	edp_clk_enable(drm_edp, false);
+
+#ifdef DRM_USE_DM_POWER
+//FIXME: if need not release resource for debug in console cmd
+//	if (drm_edp->vcc_regulator)
+//		regulator_set_enable(drm_edp->vcc_regulator, false);
+//
+//	if (drm_edp->vdd_regulator)
+//		regulator_set_enable(drm_edp->vdd_regulator, false);
+#else
+//FIXME: if need not release resource for debug in console cmd
+//	if (drm_edp->vcc_regulator)
+//		ret = sunxi_drm_power_disable(drm_edp->vcc_regulator);
+//
+//	if (drm_edp->vdd_regulator)
+//		ret = sunxi_drm_power_disable(drm_edp->vdd_regulator);
+#endif
+
 	return ret;
 }
 
@@ -2950,12 +2913,9 @@ s32 drm_edp_output_disable(struct sunxi_drm_edp *drm_edp)
 	if (!edp_core->controller_mode && sink_cap->assr_support && src_cap->assr_support)
 		edp_hw_assr_enable(edp_hw, false);
 
-	if (src_cap->enhance_frame_support && sink_cap->enhance_frame_support)
-		edp_hw_enhance_frame_enable(edp_hw, false);
 
-
-	edp_phy_enable(drm_edp, false);
 	edp_phy_exit(drm_edp);
+	edp_phy_enable(drm_edp, false);
 
 	ret = edp_clk_enable(drm_edp, false);
 	if (ret) {
@@ -3035,7 +2995,7 @@ s32 drm_dp_output_bind(struct sunxi_drm_edp *drm_edp)
 	}
 #else
 	if (drm_edp->vdd_regulator) {
-		ret = sunxi_drm_power_enable(drm_edp->vdd_regulator, 0);
+		ret = sunxi_drm_power_enable(drm_edp->vdd_regulator);
 		if (ret) {
 			EDP_ERR("vdd-edp enable failed!\n");
 			goto OUT;
@@ -3043,10 +3003,10 @@ s32 drm_dp_output_bind(struct sunxi_drm_edp *drm_edp)
 	}
 
 	if (drm_edp->vcc_regulator) {
-		ret = sunxi_drm_power_enable(drm_edp->vcc_regulator, 0);
+		ret = sunxi_drm_power_enable(drm_edp->vcc_regulator);
 		if (ret) {
 			EDP_ERR("vcc-edp enable failed!\n");
-			goto OUT;
+			goto ERR_VCC;
 		}
 	}
 #endif
@@ -3054,15 +3014,35 @@ s32 drm_dp_output_bind(struct sunxi_drm_edp *drm_edp)
 	ret = edp_clk_enable(drm_edp, true);
 	if (ret) {
 		EDP_ERR("edp_clk_enable fail!!\n");
-		goto OUT;
+		goto ERR_CLK;
 	}
 
-	edp_phy_init(drm_edp);
 	edp_phy_enable(drm_edp, true);
+	edp_phy_init(drm_edp);
 
 	edp_hw_init_early(edp_hw);
 
 	edp_hw_controller_init(edp_hw, edp_core);
+
+
+	return ret;
+
+#ifdef DRM_USE_DM_POWER
+ERR_CLK:
+	if (drm_edp->vcc_regulator)
+		ret = regulator_set_enable(drm_edp->vcc_regulator, false);
+ERR_VCC:
+	if (drm_edp->vdd_regulator)
+		ret = regulator_set_enable(drm_edp->vdd_regulator, false);
+#else
+ERR_CLK:
+	if (drm_edp->vcc_regulator)
+		ret = sunxi_drm_power_disable(drm_edp->vcc_regulator);
+
+ERR_VCC:
+	if (drm_edp->vdd_regulator)
+		ret = sunxi_drm_power_disable(drm_edp->vdd_regulator);
+#endif
 OUT:
 	return ret;
 }
@@ -3073,7 +3053,6 @@ s32 drm_dp_output_enable(struct sunxi_drm_edp *drm_edp)
 	struct edp_tx_core *edp_core = &drm_edp->edp_core;
 	struct edp_debug *edp_debug = &drm_edp->edp_debug;
 	struct edp_tx_cap *src_cap = &drm_edp->source_cap;
-	struct edp_rx_cap *sink_cap = &drm_edp->sink_cap;
 	struct sunxi_edp_hw_desc *edp_hw = &drm_edp->edp_hw;
 	s32 ret = 0;
 
@@ -3095,8 +3074,7 @@ s32 drm_dp_output_enable(struct sunxi_drm_edp *drm_edp)
 		EDP_ERR("timing is not set by edid or dts, please check!\n");
 		return RET_FAIL;
 	}
-	if (!IS_ERR_OR_NULL(drm_edp->clk))
-		clk_set_rate(drm_edp->clk, edp_core->timings.pixel_clk / edp_core->pixel_mode);
+	clk_set_rate(drm_edp->clk, edp_core->timings.pixel_clk);
 	ret = edp_hw_enable(edp_hw, edp_core);
 	if (ret) {
 		EDP_ERR("edp core enable failed!\n");
@@ -3108,9 +3086,6 @@ s32 drm_dp_output_enable(struct sunxi_drm_edp *drm_edp)
 		if (edp_core->ssc_en)
 			edp_hw_ssc_set_mode(edp_hw, edp_core->ssc_mode);
 	}
-
-	if (src_cap->enhance_frame_support && sink_cap->enhance_frame_support)
-		edp_hw_enhance_frame_enable(edp_hw, true);
 
 	/* set color space, color depth */
 	ret = edp_hw_set_video_format(edp_hw, edp_core);
@@ -3127,12 +3102,6 @@ s32 drm_dp_output_enable(struct sunxi_drm_edp *drm_edp)
 	if (ret < 0)
 		return RET_FAIL;
 
-	if (src_cap->muti_pixel_mode_support) {
-		ret = edp_hw_set_pixel_mode(edp_hw, edp_core->pixel_mode);
-		if (ret < 0)
-			return RET_FAIL;
-	}
-
 	if (!edp_debug->bypass_training) {
 		ret = edp_main_link_setup(edp_hw, edp_core);
 		if (ret < 0)
@@ -3147,11 +3116,6 @@ s32 drm_dp_output_enable(struct sunxi_drm_edp *drm_edp)
 s32 drm_dp_output_disable(struct sunxi_drm_edp *drm_edp)
 {
 	struct sunxi_edp_hw_desc *edp_hw = &drm_edp->edp_hw;
-	struct edp_tx_cap *src_cap = &drm_edp->source_cap;
-	struct edp_rx_cap *sink_cap = &drm_edp->sink_cap;
-
-	if (src_cap->enhance_frame_support && sink_cap->enhance_frame_support)
-		edp_hw_enhance_frame_enable(edp_hw, false);
 
 	return edp_hw_link_stop(edp_hw);
 }
@@ -3253,10 +3217,10 @@ void drm_dp_output_soft_reset(struct sunxi_drm_edp *drm_edp)
 		regulator_set_enable(drm_edp->vdd_regulator, true);
 #else
 	if (drm_edp->vcc_regulator)
-		sunxi_drm_power_enable(drm_edp->vcc_regulator, 0);
+		sunxi_drm_power_enable(drm_edp->vcc_regulator);
 
 	if (drm_edp->vdd_regulator)
-		sunxi_drm_power_enable(drm_edp->vdd_regulator, 0);
+		sunxi_drm_power_enable(drm_edp->vdd_regulator);
 #endif
 
 	edp_clk_enable(drm_edp, true);
@@ -3284,7 +3248,7 @@ static int sunxi_drm_edp_probe(struct udevice *dev)
 {
 	struct sunxi_drm_edp *drm_edp = dev_get_priv(dev);
 	struct udevice *tcon_tv_dev = NULL;
-	int ret, tcon_id, tcon_top_id;
+	int ret, tcon_id;
 
 	drm_edp->desc = (struct sunxi_edp_output_desc *)dev_get_driver_data(dev);
 	drm_edp->dev = dev;
@@ -3301,11 +3265,9 @@ static int sunxi_drm_edp_probe(struct udevice *dev)
 		goto OUT;
 	}
 	tcon_id = sunxi_tcon_of_get_id(tcon_tv_dev);
-	tcon_top_id = sunxi_tcon_of_get_top_id(tcon_tv_dev);
 
 	drm_edp->tcon_dev = tcon_tv_dev;
 	drm_edp->tcon_id = tcon_id;
-	drm_edp->tcon_top_id = tcon_top_id;
 	drm_edp->dev = dev;
 
 	ret = sunxi_edp_init_hardware(drm_edp);

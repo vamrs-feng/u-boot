@@ -173,8 +173,6 @@ static int add_bmp_header(struct boot_fb_private *fb)
 }
 
 
-extern int do_fat_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
-
 static int read_jpeg(const char *filename, char *buf, unsigned int buf_size)
 {
 #ifdef CONFIG_CMD_FAT
@@ -204,18 +202,9 @@ static int read_jpeg(const char *filename, char *buf, unsigned int buf_size)
 	argv[3] = read_addr;
 	argv[4] = file_name;
 	argv[5] = len;
-	if (!disp_fat_load(0, 0, 5, argv)) {
-		argv[0] = "fatsize";
-		argv[1] = "sunxi_flash";
-		argv[2] = part_num;
-		argv[3] = file_name;
-		argv[4] = NULL;
-		argv[5] = NULL;
-		if (!do_fat_size(0, 0, 4, argv))
-			return env_get_hex("filesize", 0);
-		else
-			return 0;
-	} else
+	if (!disp_fat_load(0, 0, 5, argv))
+		return env_get_hex("filesize", 0);
+	else
 		return 0;
 #else
 	int size;
@@ -288,7 +277,7 @@ static int request_fb(struct boot_fb_private *fb, unsigned int width,
 
 static int release_fb(struct boot_fb_private *fb)
 {
-	flush_cache((unsigned long)fb->base, fb->stride * fb->height);
+	flush_cache((uint)fb->base, fb->stride * fb->height);
 	return 0;
 }
 

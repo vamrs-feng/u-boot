@@ -167,7 +167,6 @@ int sunxi_drm_connector_pre_init(struct display_state *state);
 int sunxi_drm_connector_pre_enable(struct display_state *state);
 int sunxi_drm_connector_save_para(struct display_state *state);
 int sunxi_drm_connector_enable(struct display_state *state);
-int sunxi_drm_panel_post_disable(struct display_state *state);
 int sunxi_drm_connector_disable(struct display_state *state);
 int sunxi_drm_connector_backlight(struct display_state *state, bool flag);
 int sunxi_drm_connector_post_disable(struct display_state *state);

@@ -106,9 +106,7 @@ struct crtc_state {
 	enum de_color_range color_range;
 	enum de_data_bits data_bits;
 	unsigned int tcon_id;
-	unsigned int tcon_top_id;
 	unsigned long clk_freq;
-	unsigned int pixel_mode;
 	vblank_enable_callback_t enable_vblank;
 	void *vblank_enable_data;
 	fifo_status_check_callback_t check_status;
@@ -164,8 +162,6 @@ struct display_state {
 	char ulogo_name[30];
 	bool is_init;
 	bool is_enable;
-	bool backlight;
-	bool is_card_mass;
 };
 
 
