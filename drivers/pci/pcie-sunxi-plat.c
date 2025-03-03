@@ -14,6 +14,7 @@
 #include <asm/arch/clock.h>
 #include <sunxi_power/axp.h>
 #include <dm.h>
+#include <sys_config.h>
 
 extern struct sunxi_pcie_port pcie_port;
 extern struct sunxi_combphy combphy;
@@ -279,9 +280,9 @@ static int sunxi_pcie_plat_power_on(struct sunxi_pcie *pci)
 {
 	unsigned char reg_value;
 
-	reg_value = pmu_get_reg_value(0x90);
-	reg_value |= (0x1 << 6);
-	pmu_set_reg_value(0x90, reg_value);//BLDO3 1.8V phy
+	reg_value = pmu_get_reg_value(0x91);
+	reg_value |= (0x1 << 0);
+	pmu_set_reg_value(0x91, reg_value);//CLDO1 1.8V phy
 
 	reg_value = pmu_get_reg_value(0x80);
 	reg_value |= (0x1 << 3);
@@ -294,9 +295,9 @@ static void sunxi_pcie_plat_power_off(struct sunxi_pcie *pci)
 {
 	unsigned char reg_value;
 
-	reg_value = pmu_get_reg_value(0x90);
-	reg_value &= ~(0x1 << 6);
-	pmu_set_reg_value(0x90, 0xef);//BLDO3 1.8V phy
+	reg_value = pmu_get_reg_value(0x91);
+	reg_value &= ~(0x1 << 0);
+	pmu_set_reg_value(0x91, reg_value);//CLDO3 1.8V phy
 
 	reg_value = pmu_get_reg_value(0x80);
 	reg_value &= ~(0x1 << 3);
