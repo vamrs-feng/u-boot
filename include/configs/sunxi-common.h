@@ -441,7 +441,7 @@
 #ifdef CONFIG_ARM64
 #define FDTFILE "allwinner/" CONFIG_DEFAULT_DEVICE_TREE ".dtb"
 #else
-#define FDTFILE CONFIG_DEFAULT_DEVICE_TREE ".dtb"
+#define FDTFILE "allwinner/" CONFIG_DEFAULT_DEVICE_TREE ".dtb"
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
