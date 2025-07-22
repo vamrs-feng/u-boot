@@ -1260,4 +1260,4 @@ pwm: pwm@2000c00 {
 };
 
 #include "sun55iw3p1-clk.dtsi"
-#include ".board-uboot.dts"
+#include "../../../../device-a527/configs/cubie_a5e/uboot-board.dts"

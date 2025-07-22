@@ -1330,4 +1330,4 @@
 
 };
 
-#include ".board-uboot.dts"
+#include "../../../../device-a733/configs/cubie_a7z/uboot-board.dts"
