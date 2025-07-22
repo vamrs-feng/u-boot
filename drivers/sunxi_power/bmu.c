@@ -88,7 +88,7 @@ int bmu_set_ntc_onoff(int onoff, int ntc_cur)
 }
 
 /*get ntc temp*/
-int bmu_get_ntc_temp(int param[16])
+int bmu_get_ntc_temp(int param[])
 {
 #ifdef CONFIG_SUNXI_BMU_EXT
 	int ret;
