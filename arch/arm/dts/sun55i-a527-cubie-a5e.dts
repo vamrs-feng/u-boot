@@ -12,7 +12,7 @@
 #include <drm/drm_mipi_dsi.h>
 #include <dt-bindings/phy/phy.h>
 / {
-	model = "sun55iw3";
+	model = "Radxa Cubie A5E";
 	compatible = "allwinner,a523", "arm,sun55iw3p1";
 	#address-cells = <2>;
 	#size-cells = <2>;
