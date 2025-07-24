@@ -363,6 +363,7 @@ int bootm_find_images(int flag, int argc, char * const argv[])
  * so there is no need to call this function again. */
 #ifndef CONFIG_SUNXI_REPLACE_FDT_FROM_PARTITION
 	fdt_set_totalsize(working_fdt, gd->fdt_ext_size);
+	images.ft_len = fdt_totalsize(images.ft_addr);
 	sunxi_update_fdt_para_for_kernel();
 #endif
 #endif
