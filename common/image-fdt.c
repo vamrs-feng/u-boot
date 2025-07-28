@@ -539,7 +539,7 @@ int image_setup_libfdt(bootm_headers_t *images, void *blob,
 	if (lmb)
 		lmb_free(lmb, (phys_addr_t)(u32)(uintptr_t)blob,
 			 (phys_size_t)fdt_totalsize(blob));
-#if !defined(CONFIG_ARCH_SUNXI) || defined(CONFIG_DISTRO_DEFAULTS)
+#ifndef CONFIG_ARCH_SUNXI
 	/*
 	  sunxi plat use CONFIG_SUNXI_FDT_ADDR for fdt mem.
 	*/
