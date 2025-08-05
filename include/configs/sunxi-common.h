@@ -384,10 +384,12 @@
 #define BOOT_TARGET_DEVICES_MMC(func) func(MMC, mmc, 0)
 #endif
 
+#define BOOT_TARGET_DEVICES_MMC2(func) func(MMC, mmc, 2)
 #define BOOT_TARGET_DEVICES_EMMC(func) func(MMC, mmc, 1)
 #define BOOT_TARGET_DEVICES_SD(func) func(MMC, mmc, 0)
 
 #else
+#define BOOT_TARGET_DEVICES_MMC2(func)
 #define BOOT_TARGET_DEVICES_MMC(func)
 #define BOOT_TARGET_DEVICES_EMMC(func)
 #define BOOT_TARGET_DEVICES_SD(func)
@@ -434,6 +436,7 @@
 	BOOT_TARGET_DEVICES_NVME(func) \
 	BOOT_TARGET_DEVICES_SCSI(func) \
 	BOOT_TARGET_DEVICES_EMMC(func) \
+	BOOT_TARGET_DEVICES_MMC2(func) \
 	BOOT_TARGET_DEVICES_PXE(func)
 
 #include <config_distro_bootcmd.h>
