@@ -193,6 +193,37 @@ int do_sunxi_flash_boot0(cmd_tbl_t *cmdtp, int flag, int argc,
 	return -1;
 }
 
+const char *sunxi_bootstorage[STORAGE_MAX] = {
+	"nand", "sd", "emmc", "nor", "emmc3", "spinand", "sd1", "emmc0", "ufs",
+};
+
+int sunxi_flash_to_storage_num(const char *storage_type)
+{
+	int num;
+
+	for (num = 0; num < STORAGE_MAX; num++) {
+		if (!strcmp(storage_type, sunxi_bootstorage[num]))
+			return num;
+	}
+
+	return -1;
+}
+
+int do_sunxi_flash_init(cmd_tbl_t *cmdtp, int flag, int argc,
+			 char *const argv[])
+{
+	int storage_type;
+
+	storage_type = sunxi_flash_to_storage_num(argv[1]);
+
+#ifdef CONFIG_SUNXI_UFS
+	if (storage_type == STORAGE_UFS)
+		return sunxi_flash_ufs_blk_init_ext();
+	else
+#endif
+		return sunxi_flash_boot_init(storage_type, 0);
+}
+
 int do_sunxi_flash(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct blk_desc *desc;
@@ -206,6 +237,12 @@ int do_sunxi_flash(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 #ifdef CONFIG_SUNXI_SPRITE
 	static int partdata_format;
 #endif
+
+	if (!strcmp("init", argv[1])) {
+		argc--;
+		argv++;
+		return do_sunxi_flash_init(cmdtp, flag, argc, argv);
+	}
 
 	if (!strcmp("boot0", argv[1])) {
 		argc--;
@@ -313,6 +350,7 @@ usage:
 }
 
 U_BOOT_CMD(sunxi_flash, 6, 1, do_sunxi_flash, "sunxi_flash sub-system",
+	   "sunxi_flash init storage_type\n"
 	   "sunxi_flash read mem_addr part_name [size]\n"
 	   "sunxi_flash read_mtd mem_addr part_name [size]\n"
 	   "sunxi_flash write <mem_addr> <part_name> [size]\n"
