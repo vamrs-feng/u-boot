@@ -413,6 +413,12 @@
 #define BOOT_TARGET_DEVICES_NVME(func)
 #endif
 
+#ifdef CONFIG_SUNXI_UFS
+#define BOOT_TARGET_DEVICES_UFS(func) func(UFS, sunxi_flash_ufs, 0)
+#else
+#define BOOT_TARGET_DEVICES_UFS(func)
+#endif
+
 #ifdef CONFIG_USB_STORAGE
 #define BOOT_TARGET_DEVICES_USB(func) func(USB, usb, 0)
 #else
@@ -435,6 +441,7 @@
 	BOOT_TARGET_DEVICES_SD(func) \
 	BOOT_TARGET_DEVICES_NVME(func) \
 	BOOT_TARGET_DEVICES_SCSI(func) \
+	BOOT_TARGET_DEVICES_UFS(func) \
 	BOOT_TARGET_DEVICES_EMMC(func) \
 	BOOT_TARGET_DEVICES_MMC2(func) \
 	BOOT_TARGET_DEVICES_PXE(func)
