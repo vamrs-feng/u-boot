@@ -358,3 +358,44 @@ U_BOOT_CMD(sunxi_flash, 6, 1, do_sunxi_flash, "sunxi_flash sub-system",
 	   "sunxi_flash write_mtd <mem_addr> <part_name>\n"
 	   "sunxi_flash boot0 force_dram_update_size <new_val> \n"
 	   "sunxi_flash boot0 force_dram_update_flag <new_val> \n");
+
+#ifdef CONFIG_SUNXI_UFS
+
+extern int ufs_has_init;
+
+static int do_sunxi_flash_ufs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    if (argc < 3 || strcmp(argv[1], "dev") != 0)
+        return CMD_RET_USAGE;
+
+    unsigned long dev = simple_strtoul(argv[2], NULL, 10);
+
+
+    if (dev != 0) {
+        printf("invalid ufs dev %lu (only dev 0 exists)\n", dev);
+        return -1;
+    }
+
+	printf("ufs0 has init\n");
+    return (ufs_has_init == 1) ? 0 : -1;
+}
+
+U_BOOT_CMD(
+    sunxi_flash_ufs, 3, 1, do_sunxi_flash_ufs,
+    "check sunxi UFS state; only dev 0 is valid",
+    "dev <n>\n"
+    "  dev 0 : return 0 if UFS inited (ufs_has_init==1), else -1\n"
+);
+#else  /* !CONFIG_SUNXI_UFS */
+
+static int do_sunxi_flash_ufs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    printf("UFS not enabled\n");
+    return 1;
+}
+
+U_BOOT_CMD(
+    sunxi_flash_ufs, 3, 1, do_sunxi_flash_ufs,
+    "UFS not enabled", "dev <n>"
+);
+#endif

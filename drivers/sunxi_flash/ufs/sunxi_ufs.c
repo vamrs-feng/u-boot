@@ -43,7 +43,7 @@ s32 sunxi_ufs_global_enable_data_reliability(void);
 s32 sunxi_ufs_global_logical_unit_config(void);
 u64 sunxi_ufs_global_update_ufs_size(void);
 
-static int  ufs_has_init;
+int  ufs_has_init;
 static int sunxi_flash_ufs_init(int stage, int card_no);
 int sunxi_ufs_init_for_sprite(int workmode, int card_no);
 int sunxi_ufs_init_for_boot(int workmode, int card_no);
