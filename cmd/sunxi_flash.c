@@ -361,7 +361,7 @@ U_BOOT_CMD(sunxi_flash, 6, 1, do_sunxi_flash, "sunxi_flash sub-system",
 
 #ifdef CONFIG_SUNXI_UFS
 
-extern int ufs_has_init;
+extern int ufs_init_successful;
 
 static int do_sunxi_flash_ufs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -376,15 +376,14 @@ static int do_sunxi_flash_ufs(cmd_tbl_t *cmdtp, int flag, int argc, char * const
         return -1;
     }
 
-	printf("ufs0 has init\n");
-    return (ufs_has_init == 1) ? 0 : -1;
+	return ufs_init_successful ? 0 : -1;
 }
 
 U_BOOT_CMD(
     sunxi_flash_ufs, 3, 1, do_sunxi_flash_ufs,
     "check sunxi UFS state; only dev 0 is valid",
     "dev <n>\n"
-    "  dev 0 : return 0 if UFS inited (ufs_has_init==1), else -1\n"
+    "return 0 for successful UFS initialization, -1 otherwise.\n"
 );
 #else  /* !CONFIG_SUNXI_UFS */
 

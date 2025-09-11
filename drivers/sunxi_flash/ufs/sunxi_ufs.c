@@ -44,6 +44,7 @@ s32 sunxi_ufs_global_logical_unit_config(void);
 u64 sunxi_ufs_global_update_ufs_size(void);
 
 int  ufs_has_init;
+bool ufs_init_successful;
 static int sunxi_flash_ufs_init(int stage, int card_no);
 int sunxi_ufs_init_for_sprite(int workmode, int card_no);
 int sunxi_ufs_init_for_boot(int workmode, int card_no);
@@ -79,6 +80,8 @@ static unsigned char _inner_buffer[4096 + 64]; /*align temp buffer*/
 
 int sunxi_flash_ufs_probe(void)
 {
+	ufs_has_init = 0;
+	ufs_init_successful = false;
 	return 0;
 }
 
@@ -1239,16 +1242,18 @@ int sunxi_ufs_init_for_boot(int workmode, int card_no)
 	if (!ufs_has_init) {
 		ufs_has_init = 1;
 		ret = sunxi_ufs_global_init();
+		if (ret) {
+			ufs_init_successful = false;
+			puts("fail to init ufs\n");
+			return -1;
+		}
+		ufs_init_successful = true;
+		debug("ufs %d init successful\n", card_no);
 	} else {
 		puts("ufs has init\n");
 		return 0;
 	}
 
-	if (ret) {
-		printf("fail to init ufs\n");
-		return -1;
-	}
-	debug("ufs %d init ok\n", card_no);
 	return 0;
 }
 
