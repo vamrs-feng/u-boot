@@ -126,6 +126,10 @@ extern int sunxi_emac_initialize(void);
 extern int sunxi_gmac_initialize(void);
 #endif
 
+#ifdef CONFIG_RADXA_UNIFIED_IMAGE
+extern void radxa_set_compat_fdt(void);
+#endif
+
 int board_eth_init(bd_t *bis)
 {
 	int rc = 0;
@@ -820,6 +824,9 @@ int board_late_init(void)
 #endif
 #ifdef CONFIG_SUNXI_LRADC_VOL
 		sunxi_read_lradc_vol();
+#endif
+#ifdef CONFIG_RADXA_UNIFIED_IMAGE
+		radxa_set_compat_fdt();
 #endif
 #if !defined(CONFIG_OF_SEPARATE)
 		sunxi_update_fdt_para_for_kernel();

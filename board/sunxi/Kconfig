@@ -384,4 +384,13 @@ config SUNXI_PRINTF_TSTAMP_DISABLE
 	bool "support disable printf time stamp in uboot"
 	help
 		disable printf time stamp
+
+config RADXA_UNIFIED_IMAGE
+	bool "Enable Radxa unified image support"
+	depends on ADC && SUNXI_GPADC && DM
+	help
+		Enable support for Radxa unified image. This feature allows the same
+		image to run on multiple Radxa boards by reading the hardware ID
+		to automatically detect and select the appropriate board configuration.
+
 endmenu
