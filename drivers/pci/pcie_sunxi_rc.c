@@ -23,6 +23,9 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+static struct udevice *g_udev;
+static bool pcie_had_probe;
+
 #define sunxi_pcie_DBG			0
 
 #define __pcie_dev_print_emit(fmt, ...) \
@@ -408,6 +411,7 @@ static int sunxi_pcie_probe(struct udevice *dev)
 	struct pci_controller *hose = dev_get_uclass_priv(ctlr);
 	int ret;
 
+	g_udev = dev;
 	pcie->first_busno = dev->seq;
 	pcie->dev = dev;
 	pcie->drvdata = (struct sunxi_pcie_of_data *)dev_get_driver_data(dev);
@@ -442,7 +446,15 @@ static int sunxi_pcie_probe(struct udevice *dev)
 	/* Start the controller. */
 	sunxi_pcie_host_init(dev);
 
+	pcie_had_probe = true;
+
 	return 0;
+}
+
+void sunxi_pcie_exit(void)
+{
+	if (pcie_had_probe)
+		sunxi_pcie_plat_hw_deinit(g_udev);
 }
 
 static const struct dm_pci_ops sunxi_pcie_ops = {

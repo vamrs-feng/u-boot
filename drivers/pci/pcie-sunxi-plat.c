@@ -371,12 +371,21 @@ static int sunxi_pcie_plat_combo_phy_init(struct sunxi_pcie *pci)
 	return 0;
 }
 
-#if 0
 static void sunxi_pcie_plat_combo_phy_deinit(struct sunxi_pcie *pci)
 {
 	generic_phy_exit(pci->phy);
 }
-#endif
+
+void sunxi_pcie_plat_hw_deinit(struct udevice *dev)
+{
+	struct sunxi_pcie *pci = dev_get_priv(dev);
+
+	sunxi_pcie_plat_combo_phy_deinit(pci);
+
+	sunxi_pcie_plat_power_off(pci);
+
+	sunxi_pcie_plat_clk_exit(pci);
+}
 
 int sunxi_pcie_plat_hw_init(struct udevice *dev)
 {

@@ -900,6 +900,10 @@ void board_quiesce_devices(void)
 #ifdef CONFIG_SUNXI_DMA
 	sunxi_dma_exit();
 #endif
+#ifdef CONFIG_PCI
+	extern void sunxi_pcie_exit(void);
+	sunxi_pcie_exit();
+#endif
 }
 
 void sunxi_board_close_source(void)

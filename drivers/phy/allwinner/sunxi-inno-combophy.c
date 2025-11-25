@@ -119,6 +119,7 @@ struct sunxi_combphy {
 	struct regulator *select3v3_supply;
 	bool initialized;
 };
+static int pcie_usb3_sub_system_exit(struct sunxi_combphy *combphy);
 
 static void sunxi_combphy_usb3_phy_set(struct sunxi_combphy *combphy, bool enable)
 {
@@ -275,12 +276,12 @@ static int sunxi_combphy_usb3_init(struct sunxi_combphy *combphy)
 	return 0;
 }
 
-// static int sunxi_combphy_usb3_exit(struct sunxi_combphy *combphy)
-// {
-// 	sunxi_combphy_usb3_phy_set(combphy, false);
+static int sunxi_combphy_usb3_exit(struct sunxi_combphy *combphy)
+{
+	sunxi_combphy_usb3_phy_set(combphy, false);
 
-// 	return 0;
-// }
+	return 0;
+}
 
 static void sunxi_combphy_pcie_phy_enable(struct sunxi_combphy *combphy)
 {
@@ -415,6 +416,33 @@ static int sunxi_combphy_pcie_init(struct sunxi_combphy *combphy)
 	return 0;
 }
 
+static int sunxi_combphy_pcie_exit(struct sunxi_combphy *combphy)
+{
+	u32 val;
+
+	/* set the phy:
+	 * bit(17): aclk enable
+	 * bit(16): hclk enbale
+	 * bit(1) : pcie_presetn
+	 * bit(0) : pcie_power_up_rstn
+	 */
+	val = readl(combphy->phy_ctl + PCIE_COMBO_PHY_BGR);
+	val &= (~(0x03<<0));
+	val &= (~(0x03<<16));
+	writel(val, combphy->phy_ctl + PCIE_COMBO_PHY_BGR);
+
+	/* Assert the phy */
+	val = readl(combphy->phy_ctl + PCIE_COMBO_PHY_CTL);
+	val &= (~PHY_USE_SEL);
+	val &= (~(0x03<<8));
+	val &= (~PHY_RSTN);
+	writel(val, combphy->phy_ctl + PCIE_COMBO_PHY_CTL);
+
+	pcie_usb3_sub_system_exit(combphy);
+
+	return 0;
+}
+
 static int sunxi_combphy_set_mode(struct sunxi_combphy *combphy)
 {
 	switch (combphy->mode) {
@@ -448,6 +476,25 @@ static int sunxi_inno_phy_init(struct phy *phy)
 	}
 
 	return ret;
+}
+
+static int sunxi_combphy_exit(struct phy *phy)
+{
+	struct sunxi_combphy *combphy = dev_get_priv(phy->dev);
+
+	switch (combphy->mode) {
+	case PHY_TYPE_PCIE:
+		sunxi_combphy_pcie_exit(combphy);
+		break;
+	case PHY_TYPE_USB3:
+		sunxi_combphy_usb3_exit(combphy);
+		break;
+	default:
+		dev_err(combphy->dev, "incompatible PHY type\n");
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 /*  PCIE USB3 Sub-system Application */
@@ -536,6 +583,20 @@ static void pcie_usb3_sub_system_enable(struct sunxi_combphy *combphy)
 	combphy->vernum = combo_sysver_get(combphy);
 }
 
+static void pcie_usb3_sub_system_disable(struct sunxi_combphy *combphy)
+{
+	combo_phy_mode_set(combphy, false);
+
+	if (combphy->user == PHY_USE_BY_PCIE)
+		combo_pcie_clk_set(combphy, false);
+	else if (combphy->user == PHY_USE_BY_USB3)
+		combo_usb3_clk_set(combphy, false);
+	else if (combphy->user == PHY_USE_BY_PCIE_USB3_U2) {
+		combo_pcie_clk_set(combphy, false);
+		combo_usb3_clk_set(combphy, false);
+	}
+}
+
 static int pcie_usb3_sub_system_init(struct sunxi_combphy *combphy)
 {
 	unsigned long reg_value = 0;
@@ -561,6 +622,34 @@ static int pcie_usb3_sub_system_init(struct sunxi_combphy *combphy)
 	pcie_usb3_sub_system_enable(combphy);
 
 	combphy->initialized = true;
+
+	return 0;
+}
+
+static int pcie_usb3_sub_system_exit(struct sunxi_combphy *combphy)
+{
+	unsigned long reg_value = 0;
+	struct sunxi_ccm_reg *const ccm =
+		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+
+	if (!combphy->initialized)
+		return 0;
+
+	pcie_usb3_sub_system_disable(combphy);
+
+	//0xaac pcie_bgr_reg
+	reg_value = readl(&ccm->pcie_bgr_reg);
+	reg_value &= ~(1 << PCIE_BRG_REG_RST);
+	writel(reg_value, &ccm->pcie_bgr_reg);
+
+	//0xa84 usb2_ref_clk_reg
+	reg_value = readl(0x2001a84);
+	reg_value &= ~(0x1<<31);
+	reg_value &= ~(0x7<<24);
+	reg_value &= ~(0x1f<<0);
+	writel(reg_value, 0x2001a84);
+
+	combphy->initialized = false;
 
 	return 0;
 }
@@ -591,6 +680,7 @@ static const struct sunxi_combophy_of_data sunxi_inno_v1_of_data = {
 
 static const struct phy_ops sunxi_inno_phy_ops = {
 	.init		= sunxi_inno_phy_init,
+	.exit 		= sunxi_combphy_exit,
 };
 
 static const struct udevice_id sunxi_inno_phy_of_match_table[] = {

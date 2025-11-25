@@ -456,6 +456,7 @@ struct sunxi_pcie {
 
 void sunxi_pcie_plat_init(struct udevice *dev);
 int sunxi_pcie_plat_hw_init(struct udevice *dev);
+void sunxi_pcie_plat_hw_deinit(struct udevice *dev);
 
 void sunxi_pcie_plat_set_rate(struct sunxi_pcie *pci);
 void sunxi_pcie_plat_set_mode(struct sunxi_pcie *pci);
