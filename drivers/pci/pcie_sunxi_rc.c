@@ -20,6 +20,7 @@
 #include <linux/iopoll.h>
 #include <linux/ioport.h>
 #include "pcie-sunxi.h"
+#include "../../board/sunxi/cubie_board.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -361,10 +362,16 @@ static int sunxi_pcie_host_speed_change(struct sunxi_pcie *pci, int gen)
 static void sunxi_pcie_host_init(struct udevice *dev)
 {
 	struct sunxi_pcie *pci = dev_get_priv(dev);
+#ifdef CONFIG_RADXA_UNIFIED_IMAGE
+	struct hw_info_def hw_info = radxa_get_hw_info();
+	int pcie_reset_gpio = sunxi_name_to_gpio(hw_info.pcie_reset_gpio);
+	int pcie_wake_gpio = sunxi_name_to_gpio(hw_info.pcie_wake_gpio);
+	int pcie_power_gpio = sunxi_name_to_gpio(hw_info.pcie_power_gpio);
+#else
 	int pcie_reset_gpio = sunxi_name_to_gpio(CONFIG_PCIE_PERST_GPIO);
 	int pcie_wake_gpio = sunxi_name_to_gpio(CONFIG_PCIE_WAKE_GPIO);
 	int pcie_power_gpio = sunxi_name_to_gpio(CONFIG_PCIE_POWER_GPIO);
-
+#endif
 	sunxi_pcie_plat_ltssm_disable(pci);
 	if (pcie_reset_gpio >= 0 && pcie_wake_gpio >= 0 && pcie_power_gpio >= 0) {
 		/* set cfg, ouput */

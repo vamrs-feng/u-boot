@@ -127,6 +127,7 @@ extern int sunxi_gmac_initialize(void);
 #endif
 
 #ifdef CONFIG_RADXA_UNIFIED_IMAGE
+extern void radxa_set_board_type(void);
 extern void radxa_set_compat_fdt(void);
 #endif
 
@@ -816,6 +817,9 @@ int board_late_init(void)
 #endif
 		sunxi_respond_ir_key_action();
 		sunxi_update_bootcmd();
+#ifdef CONFIG_RADXA_UNIFIED_IMAGE
+		radxa_set_board_type();
+#endif
 #ifdef CONFIG_PCIE_ALLWINNER_RC
 		pci_init();
 #endif
