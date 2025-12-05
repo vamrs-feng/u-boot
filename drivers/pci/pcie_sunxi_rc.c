@@ -361,46 +361,27 @@ static int sunxi_pcie_host_speed_change(struct sunxi_pcie *pci, int gen)
 static void sunxi_pcie_host_init(struct udevice *dev)
 {
 	struct sunxi_pcie *pci = dev_get_priv(dev);
-	unsigned int pcie_reset_gpio = sunxi_name_to_gpio(CONFIG_PCIE_PERST_GPIO);
-	unsigned int pcie_wake_gpio = sunxi_name_to_gpio(CONFIG_PCIE_WAKE_GPIO);
-	unsigned int pcie_power_gpio = sunxi_name_to_gpio(CONFIG_PCIE_POWER_GPIO);
-
-	if (pcie_power_gpio == -1) {
-		printf("pcie requesst power gpio failed\r\n");
-	}
-
-	/* set cfg, ouput */
-	sunxi_gpio_set_cfgpin(pcie_power_gpio, 1);
-
-	gpio_set_value(pcie_power_gpio, 0);
-	mdelay(100);
-	gpio_set_value(pcie_power_gpio, 1);
-
-	pcie_reset_gpio = sunxi_name_to_gpio(CONFIG_PCIE_PERST_GPIO);
-	if (pcie_reset_gpio == -1) {
-		printf("pcie requesst perst gpio failed\r\n");
-	}
-
-	/* set cfg, ouput */
-	sunxi_gpio_set_cfgpin(pcie_reset_gpio, 1);
+	int pcie_reset_gpio = sunxi_name_to_gpio(CONFIG_PCIE_PERST_GPIO);
+	int pcie_wake_gpio = sunxi_name_to_gpio(CONFIG_PCIE_WAKE_GPIO);
+	int pcie_power_gpio = sunxi_name_to_gpio(CONFIG_PCIE_POWER_GPIO);
 
 	sunxi_pcie_plat_ltssm_disable(pci);
-
-	if (pcie_reset_gpio >= 0 && pcie_wake_gpio >= 0) {
+	if (pcie_reset_gpio >= 0 && pcie_wake_gpio >= 0 && pcie_power_gpio >= 0) {
 		/* set cfg, ouput */
 		sunxi_gpio_set_cfgpin(pcie_reset_gpio, 1);
-		sunxi_gpio_set_cfgpin(pcie_wake_gpio, 1);
+		sunxi_gpio_set_cfgpin(pcie_wake_gpio, 0);
+		sunxi_gpio_set_cfgpin(pcie_power_gpio, 1);
 
-		gpio_set_value(pcie_wake_gpio, 1);
+		gpio_set_value(pcie_power_gpio, 0);
+		mdelay(100);
+		gpio_set_value(pcie_power_gpio, 1);
 		gpio_set_value(pcie_reset_gpio, 0);
 		mdelay(100);
 		gpio_set_value(pcie_reset_gpio, 1);
 	}
-
+	mdelay(100);
 	sunxi_pcie_host_setup_rc(&pci->pcie_port);
-
 	sunxi_pcie_host_establish_link(pci);
-
 	sunxi_pcie_host_speed_change(pci, pci->link_gen);
 }
 
