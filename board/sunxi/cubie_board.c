@@ -1,26 +1,43 @@
 #include <asm-generic/gpio.h>
 #include <sunxi_gpadc.h>
 #include <dm/device.h>
+#include "cubie_board.h"
 
-#define countof(x) (sizeof(x) / sizeof(x[0]))
-#define HW_ID_ADC_CHANNEL	2
-/*PK 24 */
-#define HW_ID_GPIO			344
-
-struct hw_info_def {
-	char *compatible;
-	char *fdtfile;
-	unsigned int hw_id_level;
-	unsigned int hw_id_lower_bound;
-	unsigned int hw_id_upper_bound;
+unsigned int board_index = 0;
+static const struct hw_info_def hw_info[] = {
+	{
+		.compatible = "allwinner,a733",
+		.fdtfile = "allwinner/sun60i-a733-cubie-a7z.dtb",
+		.pcie_power_gpio = "PD20",
+		.pcie_wake_gpio = "PD21",
+		.pcie_reset_gpio = "PD22",
+		.hw_id_level = 1,
+		.hw_id_lower_bound = 1750,
+		.hw_id_upper_bound = 1850, //1800mv +/- 50mv
+	},
+	{
+		.compatible = "allwinner,a733",
+		.fdtfile = "allwinner/sun60i-a733-cubie-a7a.dtb",
+		.pcie_power_gpio = "PE11",
+		.pcie_wake_gpio = "PE12",
+		.pcie_reset_gpio = "PE13",
+		.hw_id_level = 1,
+		.hw_id_lower_bound = 1519,
+		.hw_id_upper_bound = 1619, //1569mv +/- 50mv
+	},
+	{
+		.compatible = "allwinner,a733",
+		.fdtfile = "allwinner/sun60i-a733-cubie-a7s.dtb",
+		.pcie_power_gpio = "PD20",
+		.pcie_wake_gpio = "PD21",
+		.pcie_reset_gpio = "PD22",
+		.hw_id_level = 1,
+		.hw_id_lower_bound = 1265,
+		.hw_id_upper_bound = 1365, //1315mv +/- 50mv
+	},
 };
 
-static struct hw_info_def hw_info[] = {
-	{"allwinner,a733", "allwinner/sun60i-a733-cubie-a7s.dtb", 1, 1265, 1365}, //1315mv +/- 50mv
-	{"allwinner,a733", "allwinner/sun60i-a733-cubie-a7a.dtb", 1, 1519, 1619}, //1569mv +/- 50mv
-	{"allwinner,a733", "allwinner/sun60i-a733-cubie-a7z.dtb", 1, 1750, 1850}, //1800mv +/- 50mv
-};
-void radxa_set_compat_fdt(void)
+void radxa_set_board_type(void)
 {
 	int i, vol, level;
 
@@ -39,10 +56,22 @@ void radxa_set_compat_fdt(void)
 			vol >= hw_info[i].hw_id_lower_bound &&
 			vol <= hw_info[i].hw_id_upper_bound &&
 			level == hw_info[i].hw_id_level) {
-			env_set("fdtfile", hw_info[i].fdtfile);
-			printf("Override default fdtfile to %s\n", hw_info[i].fdtfile);
+			board_index = i;
 			return;
 		}
 	}
-	printf("No compatible fdtfile found for vol=%d, level=%d\n", vol, level);
+	printf("No compatible board type found for vol=%d, level=%d\n", vol, level);
+	return;
+}
+
+void radxa_set_compat_fdt(void)
+{
+	env_set("fdtfile", hw_info[board_index].fdtfile);
+	printf("Override default fdtfile to %s\n", hw_info[board_index].fdtfile);
+	return;
+}
+
+struct hw_info_def radxa_get_hw_info(void)
+{
+	return hw_info[board_index];
 }
