@@ -219,7 +219,7 @@ static void sunxi_pcie_host_setup_rc(struct sunxi_pcie_port *pp)
 	/* setup bus numbers */
 	val = sunxi_pcie_readl_dbi(pci, PCI_PRIMARY_BUS);
 	val &= 0xff000000;
-	val |= 0x00ff0100;
+	val |= PCIE_PRIMARY_BUS_ENABLE;
 	sunxi_pcie_writel_dbi(pci, PCI_PRIMARY_BUS, val);
 
 	/* setup command register */
