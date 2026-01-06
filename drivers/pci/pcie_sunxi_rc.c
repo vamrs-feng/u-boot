@@ -89,10 +89,11 @@ static int sunxi_pcie_rd_other_conf(struct sunxi_pcie_port *pp, pci_dev_t d, int
 {
 	int ret = PCIBIOS_SUCCESSFUL, type;
 	u64 busdev;
+	struct sunxi_pcie *pci = to_sunxi_pcie_from_pp(pp);
 
 	busdev = PCIE_ATU_BUS(PCI_BUS(d)) | PCIE_ATU_DEV(PCI_DEV(d)) | PCIE_ATU_FUNC(PCI_FUNC(d));
 
-	if (PCI_BUS(d) != 0)
+	if (PCI_BUS(d) == pci->first_busno + 1)
 		type = PCIE_ATU_TYPE_CFG0;
 	else
 		type = PCIE_ATU_TYPE_CFG1;
@@ -108,10 +109,11 @@ static int sunxi_pcie_wr_other_conf(struct sunxi_pcie_port *pp, pci_dev_t d, int
 {
 	int ret = PCIBIOS_SUCCESSFUL, type;
 	u64 busdev;
+	struct sunxi_pcie *pci = to_sunxi_pcie_from_pp(pp);
 
 	busdev = PCIE_ATU_BUS(PCI_BUS(d)) | PCIE_ATU_DEV(PCI_DEV(d)) | PCIE_ATU_FUNC(PCI_FUNC(d));
 
-	if (PCI_BUS(d) != 0)
+	if (PCI_BUS(d) == pci->first_busno + 1)
 		type = PCIE_ATU_TYPE_CFG0;
 	else
 		type = PCIE_ATU_TYPE_CFG1;
