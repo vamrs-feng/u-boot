@@ -210,6 +210,12 @@
 				drive-strength = <30>;
 				bias-pull-up;
 			};
+
+			i2c_pins: i2c-pins {
+				pins = "PG8" ,"PG9";
+				allwinner,pinmux = <6>;
+				function = "i2c0";
+			};
 		};
 
 		ccu: clock-controller@2002000 {
@@ -231,6 +237,22 @@
 			clocks = <&osc24M>, <&rtc CLK_OSC32K>;
 			clock-names = "hosc", "losc";
 			status = "okay";
+		};
+
+		i2c0: i2c@2510000 {
+			compatible = "allwinner,sun60i-a733-i2c",
+				     "allwinner,sun8i-v536-i2c",
+				     "allwinner,sun6i-a31-i2c";
+			reg = <0x02510000 0x400>;
+			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&ccu CLK_BUS_I2C0>;
+			resets = <&ccu RST_BUS_I2C0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c_pins>;
+			status = "disabled";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
 		};
 
 		uart0: serial@2500000 {

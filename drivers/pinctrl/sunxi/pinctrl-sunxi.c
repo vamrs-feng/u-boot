@@ -789,6 +789,7 @@ static const struct sunxi_pinctrl_function sun60i_a733_pinctrl_functions[] = {
 	{ "gpio_out",	1 },
 	{ "gmac0",	5 },	/* PH0-PH15 */
 	{ "gmac1",	5 },	/* PJ0-PJ15 */
+	{ "i2c0",	6 },	/* PG8, PG9*/
 	{ "mmc0",	2 },	/* PF0-PF5 */
 	{ "mmc1",	2 },	/* PG0-PG5 */
 	{ "mmc2",	3 },	/* PC0, PC1, PC5, PC6, PC8-PC11, PC13-PC16 */
