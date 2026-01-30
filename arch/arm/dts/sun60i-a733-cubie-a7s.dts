@@ -109,6 +109,14 @@
 	};
 };
 
+&i2c0 {
+	status = "okay";
+	eeprom: eeprom@50 {
+		compatible = "atmel,24c16a", "i2c-eeprom";
+		reg = <0x50>;
+	};
+};
+
 &r_i2c0 {
 	status = "okay";
 
