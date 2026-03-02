@@ -81,3 +81,8 @@ config ADC_IMX93
 	  It provides:
 	  - 4 analog input channels
 	  - 12-bit resolution
+
+config SUNXI_GPADC
+	bool "Enabke sunxi gpadc driver"
+	help
+	 This enables driver for sunxi gpadc
