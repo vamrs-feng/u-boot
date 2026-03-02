@@ -22,3 +22,11 @@ config SPL_IMAGE_TYPE
 	string
 	default "sunxi_egon" if SPL_IMAGE_TYPE_SUNXI_EGON
 	default "sunxi_toc0" if SPL_IMAGE_TYPE_SUNXI_TOC0
+
+config RADXA_UNIFIED_IMAGE
+	bool "Enable Radxa unified image support"
+	depends on ADC && SUNXI_GPADC && DM
+	help
+		Enable support for Radxa unified image. This feature allows the same
+		image to run on multiple Radxa boards by reading the hardware ID
+		to automatically detect and select the appropriate board configuration.

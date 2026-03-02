@@ -53,6 +53,11 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_RADXA_UNIFIED_IMAGE
+extern void radxa_set_board_type(void);
+extern void radxa_set_compat_fdt(void);
+#endif
+
 void i2c_init_board(void)
 {
 #ifdef CONFIG_I2C0_ENABLE
@@ -872,6 +877,10 @@ int board_late_init(void)
 	usb_ether_init();
 #endif
 
+#ifdef CONFIG_RADXA_UNIFIED_IMAGE
+	radxa_set_board_type();
+	radxa_set_compat_fdt();
+#endif
 	return 0;
 }
 
