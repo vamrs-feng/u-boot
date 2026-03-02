@@ -46,6 +46,9 @@
 #define SUNXI_GPIO_G	6
 #define SUNXI_GPIO_H	7
 #define SUNXI_GPIO_I	8
+/* sun60i has two extra banks of GPIO */
+#define SUNXI_GPIO_J	9
+#define SUNXI_GPIO_K	10
 
 /*
  * sun6i/sun8i and later SoCs have an additional GPIO controller (R_PIO)
@@ -82,6 +85,8 @@ enum sunxi_gpio_number {
 	SUNXI_GPIO_G_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_F),
 	SUNXI_GPIO_H_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_G),
 	SUNXI_GPIO_I_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_H),
+	SUNXI_GPIO_J_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_I),
+	SUNXI_GPIO_K_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_J),
 	SUNXI_GPIO_L_START = 352,
 	SUNXI_GPIO_M_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_L),
 	SUNXI_GPIO_N_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_M),
@@ -97,6 +102,8 @@ enum sunxi_gpio_number {
 #define SUNXI_GPG(_nr)	(SUNXI_GPIO_G_START + (_nr))
 #define SUNXI_GPH(_nr)	(SUNXI_GPIO_H_START + (_nr))
 #define SUNXI_GPI(_nr)	(SUNXI_GPIO_I_START + (_nr))
+#define SUNXI_GPJ(_nr)	(SUNXI_GPIO_J_START + (_nr))
+#define SUNXI_GPK(_nr)	(SUNXI_GPIO_K_START + (_nr))
 #define SUNXI_GPL(_nr)	(SUNXI_GPIO_L_START + (_nr))
 #define SUNXI_GPM(_nr)	(SUNXI_GPIO_M_START + (_nr))
 #define SUNXI_GPN(_nr)	(SUNXI_GPIO_N_START + (_nr))
