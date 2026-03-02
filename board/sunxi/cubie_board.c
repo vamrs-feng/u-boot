@@ -1,4 +1,5 @@
 #include <env.h>
+#include <sunxi_gpio.h>
 #include <asm-generic/gpio.h>
 #include <sunxi_gpadc.h>
 #include <dm/device.h>
@@ -41,6 +42,8 @@ static const struct hw_info_def hw_info[] = {
 void radxa_set_board_type(void)
 {
 	int i, vol, level;
+
+	sunxi_gpio_set_cfgpin(SUNXI_GPK(24), SUNXI_GPIO_INPUT);
 
 	if (gpio_request(HW_ID_GPIO, "hw_id_level") != 0) {
 		debug("Failed to request GPIO %d for hardware ID detection\n", HW_ID_GPIO);
