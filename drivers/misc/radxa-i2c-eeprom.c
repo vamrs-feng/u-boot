@@ -487,7 +487,7 @@ int radxa_mac_read_from_eeprom(u8 *macaddr)
 
 	if(read_eeprom(eeprom_buff))
 		return -1;
-    memcpy(macaddr, einfo_page2.mac_addr, strlen(einfo_page2.mac_addr) + 1);
+    memcpy(macaddr, einfo_page2.mac_addr, 6);
 	return 0;
 }
 
