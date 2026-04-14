@@ -444,6 +444,8 @@ static int sunxi_cadence_phy_parse_dt(struct udevice *dev)
 		return -ENXIO;
 	}
 
+	setbits_le32(0x0709016c, BIT(5)); // DCXO_SERDES1_GATING in RTC module
+
 	ret = reset_get_by_name(dev, "bus", &sunxi_cphy->bus_rst);
 	if (ret < 0) {
 		printf("failed to get bus reset for sunxi cadence phy\n");
