@@ -140,7 +140,8 @@
 	"scriptaddr=" SCRIPT_ADDR_R "\0" \
 	"pxefile_addr_r=" PXEFILE_ADDR_R "\0" \
 	"fdtoverlay_addr_r=" FDTOVERLAY_ADDR_R "\0" \
-	"ramdisk_addr_r=" RAMDISK_ADDR_R "\0"
+	"ramdisk_addr_r=" RAMDISK_ADDR_R "\0" \
+	"initrd_high=0xffffffff" "\0"
 
 #ifdef CONFIG_ARM64
 #define MEM_LAYOUT_ENV_EXTRA_SETTINGS \
