@@ -13,6 +13,7 @@ obj-y += version.o
 
 # command
 obj-$(CONFIG_CMD_SUNXI_BOOT_ARISC) += sunxi_boot_arisc.o
+obj-$(CONFIG_CMD_SUNXI_SID) += sunxi_sid.o
 obj-$(CONFIG_CMD_ARMFFA) += armffa.o
 obj-$(CONFIG_CMD_2048) += 2048.o
 obj-$(CONFIG_CMD_ACPI) += acpi.o

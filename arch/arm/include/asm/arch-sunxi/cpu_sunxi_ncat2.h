@@ -91,6 +91,7 @@
 void sunxi_board_init(void);
 void sunxi_reset(void);
 int sunxi_get_sid(unsigned int *sid);
+int sunxi_get_serial(unsigned int *serial);
 #endif
 
 #endif /* _SUNXI_CPU_SUNXI_NCAT2_H */

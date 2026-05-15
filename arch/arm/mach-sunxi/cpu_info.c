@@ -177,3 +177,20 @@ int sunxi_get_sid(unsigned int *sid)
 	return -ENODEV;
 #endif
 }
+
+int sunxi_get_serial(unsigned int *serial)
+{
+	unsigned int chipid[4];
+	int ret;
+
+	ret = sunxi_get_sid(chipid);
+	if (ret)
+		return ret;
+
+	serial[0] = chipid[3];
+	serial[1] = chipid[2];
+	serial[2] = (chipid[1] >> 16) & 0xFFFF;
+	serial[3] = 0;
+
+	return 0;
+}

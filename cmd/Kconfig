@@ -3233,4 +3233,12 @@ config CMD_SUNXI_BOOT_ARISC
 		bool "Load and run arisc cpu"
 		default MACH_SUN60I_A733
 
+config CMD_SUNXI_SID
+		bool "sunxi SID - display chipid and serial"
+		default y if ARCH_SUNXI
+		help
+		  Display the chip's unique ID (chipid) and serial number
+		  read from the SID eFuse. The serial format matches the
+		  Linux kernel's /sys/class/sunxi_info/sys_info output.
+
 endif
