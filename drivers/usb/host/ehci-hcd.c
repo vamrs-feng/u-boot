@@ -231,8 +231,18 @@ static int ehci_shutdown(struct ehci_ctrl *ctrl)
 			HCHALT_TIMEOUT);
 	}
 
-	if (ret)
-		puts("EHCI failed to shut down host controller.\n");
+	if (ret) {
+		/*
+		 * Graceful shutdown failed, force a hard HCRESET.
+		 * CMD_RESET clears automatically after ~12ms per EHCI spec.
+		 * Use mdelay instead of handshake because some controllers
+		 * return 0xFFFFFFFF on register reads while in reset.
+		 */
+		cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
+		cmd |= CMD_RESET;
+		ehci_writel(&ctrl->hcor->or_usbcmd, cmd);
+		mdelay(50);
+	}
 
 	return ret;
 }
