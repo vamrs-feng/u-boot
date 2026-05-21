@@ -37,6 +37,18 @@
 		gpio = <&r_pio 0 2 GPIO_ACTIVE_HIGH>;	/* PL2 */
 		enable-active-high;
 	};
+
+	reg_usb_host_en: usb-host-en {
+		compatible = "regulator-fixed";
+		regulator-name = "usb-host-en";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&reg_vcc5v>;
+		gpio = <&r_pio 1 5 GPIO_ACTIVE_HIGH>;	/* PM5 */
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+	};
 };
 
 &uart0 {
