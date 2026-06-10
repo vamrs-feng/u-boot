@@ -819,6 +819,12 @@ static int label_boot(struct pxe_context *ctx, struct pxe_label *label)
 		bootm_argc = 4;
 	}
 
+	if (IS_ENABLED(CONFIG_CMD_SUNXI_BOOT_ARISC)) {
+		printf("Starting ARISC with fdt_addr_r=%s ...\n",
+		       env_get("fdt_addr_r") ?: "(null)");
+		run_command("sunxi_boot_arisc", 0);
+	}
+
 	/* Try bootm for legacy and FIT format image */
 	if (genimg_get_format(buf) != IMAGE_FORMAT_INVALID &&
 	    IS_ENABLED(CONFIG_CMD_BOOTM)) {
