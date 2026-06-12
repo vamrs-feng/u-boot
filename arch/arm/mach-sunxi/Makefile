@@ -49,4 +49,23 @@ obj-$(CONFIG_DRAM_SUN50I_A133)	+= dram_sun50i_a133.o
 obj-$(CONFIG_DRAM_SUN50I_A133)	+= dram_timings/
 obj-$(CONFIG_MACH_SUN55I_A523)	+= dram_sun55i_a523.o dram_dw_helpers.o
 obj-$(CONFIG_DRAM_SUN55I_A523)	+= dram_timings/
+obj-$(CONFIG_MACH_SUN60I_A733)	+= dram_sun60i_a733.o
+obj-$(CONFIG_MACH_SUN60I_A733)	+= sunxi_libdram.o
 endif
+
+SUNXI_LIBDRAM_TARGET = $(objtree)/sunxi-libdram.bin
+
+$(obj)/sunxi_libdram.o: $(SUNXI_LIBDRAM_TARGET)
+AFLAGS_sunxi_libdram.o := -DSUNXI_LIBDRAM_BIN=\"$(abspath $(SUNXI_LIBDRAM_TARGET))\"
+
+$(SUNXI_LIBDRAM_TARGET): FORCE
+	@if [ -z "$(SUNXI_LIBDRAM)" ] || [ ! -f "$(SUNXI_LIBDRAM)" ]; then \
+		echo "  Error: No sunxi-libdram firmware found"; \
+		echo "  Set SUNXI_LIBDRAM to build A733 SPL"; \
+		false; \
+	elif ! cmp -s "$(SUNXI_LIBDRAM)" $@ 2>/dev/null; then \
+		echo "  Copying sunxi-libdram from: $(SUNXI_LIBDRAM)"; \
+		cp "$(SUNXI_LIBDRAM)" $@; \
+	fi
+
+clean-files += $(SUNXI_LIBDRAM_TARGET)

@@ -41,6 +41,24 @@
 	.word	0xee1ceffc	// mrc     15, 0, lr, cr12, cr12, {7}
 	.word	0xe580e01c	// str     lr, [r0, #28]
 #endif
+#if defined(CONFIG_MACH_SUN60I_A733) && defined(CONFIG_XPL_BUILD)
+	.word	0xe59f3084	// ldr     r3, [pc, #132] ; CONFIG_SUNXI_LIBDRAM_BASE
+	.word	0xe59f0084	// ldr     r0, [pc, #132] ; sunxi_libdram_blob_start
+	.word	0xe1a01003	// mov     r1, r3
+	.word	0xe59f2080	// ldr     r2, [pc, #128] ; sunxi_libdram_blob_end
+	.word	0xe0422000	// sub     r2, r2, r0
+	.word	0xe8b00ff0	// ldm     r0!, {r4-r11}
+	.word	0xe8a10ff0	// stm     r1!, {r4-r11}
+	.word	0xe2522020	// subs    r2, r2, #32
+	.word	0x1afffffb	// bne     copy loop
+	.word	0xe3a00000	// mov     r0, #0
+	.word	0xee070f15	// mcr     15, 0, r0, cr7, cr5, {0} ; invalidate icache
+	.word	0xf57ff04f	// dsb     sy
+	.word	0xf57ff06f	// isb     sy
+	.word	0xe12fff33	// blx     r3
+	.word	0xe59f3058	// ldr     r3, [pc, #88] ; SPL header dram_size
+	.word	0xe5830000	// str     r0, [r3]
+#endif
 	.word	0xe59f1034	// ldr     r1, [pc, #52] ; RVBAR_ADDRESS
 	.word	0xe59f0034	// ldr     r0, [pc, #52] ; SUNXI_SRAMC_BASE
 	.word	0xe5900024	// ldr     r0, [r0, #36] ; SRAM_VER_REG
@@ -62,6 +80,12 @@
 	.word	CONFIG_SUNXI_RVBAR_ALTERNATIVE	// address for die variant
 #ifdef CONFIG_XPL_BUILD
 	.word	CONFIG_SPL_TEXT_BASE
+#ifdef CONFIG_MACH_SUN60I_A733
+	.word	CONFIG_SUNXI_LIBDRAM_BASE
+	.word	sunxi_libdram_blob_start
+	.word	sunxi_libdram_blob_end
+	.word	CONFIG_SUNXI_SRAM_ADDRESS + 0x24
+#endif
 #else
 	.word   CONFIG_TEXT_BASE
 #endif
