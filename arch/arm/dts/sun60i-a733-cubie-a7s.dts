@@ -243,3 +243,33 @@
 		};
 	};
 };
+
+&spi0  {
+	status = "okay";
+
+	flash@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <20000000>;
+	};
+};
+
+&ufs {
+	status = "okay";
+};
+
+&serdes {
+	status = "okay";
+	combophy0: combo-phy0@6c01000 {
+		lane_invert = <0 0 0 0>;
+		lane_remap = <2 3 0 1>;
+	};
+};
+
+&pcie_rc {
+	status = "okay";
+	pcie1v8-supply = <&reg_bldo1>;
+	pcie3v3-supply = <&reg_dcdc1>;
+};
