@@ -322,6 +322,8 @@ uint32_t sunxi_get_boot_device(void)
 	case SUNXI_BOOTED_FROM_SPI:
 	case SUNXI_BOOTED_FROM_SPI_A733:
 		return BOOT_DEVICE_SPI;
+	case SUNXI_BOOTED_FROM_UFS_A733:
+		return BOOT_DEVICE_UFS;
 	}
 
 	panic("Unknown boot source %d\n", boot_source);

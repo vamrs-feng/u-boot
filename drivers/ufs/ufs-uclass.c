@@ -1660,7 +1660,7 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 {
 	struct ufs_hba *hba = dev_get_uclass_priv(scsi_dev->parent);
 	u32 upiu_flags;
-	int ocs, result = 0;
+	int ocs, ret, result = 0;
 	u8 scsi_status;
 
 	ufshcd_prepare_req_desc_hdr(hba, &upiu_flags, pccb->dma_dir);
@@ -1669,7 +1669,9 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 
 	ufshcd_cache_flush(pccb->pdata, pccb->datalen);
 
-	ufshcd_send_command(hba, TASK_TAG);
+	ret = ufshcd_send_command(hba, TASK_TAG);
+	if (ret)
+		return ret;
 
 	ufshcd_cache_invalidate(pccb->pdata, pccb->datalen);
 
@@ -2187,7 +2189,10 @@ int ufshcd_probe(struct udevice *ufs_dev, struct ufs_hba_ops *hba_ops)
 
 	scsi_plat = dev_get_uclass_plat(scsi_dev);
 	scsi_plat->max_id = UFSHCD_MAX_ID;
-	scsi_plat->max_lun = UFS_MAX_LUNS;
+	if (CONFIG_IS_ENABLED(UFS_SUPPORT))
+		scsi_plat->max_lun = CONFIG_SPL_UFS_RAW_U_BOOT_DEVNUM + 1;
+	else
+		scsi_plat->max_lun = UFS_MAX_LUNS;
 	scsi_plat->max_bytes_per_req = UFS_MAX_BYTES;
 
 	hba->dev = ufs_dev;

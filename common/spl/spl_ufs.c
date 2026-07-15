@@ -30,7 +30,10 @@ static int spl_ufs_load_image(struct spl_image_info *spl_image,
 	int err;
 
 	/* try to recognize storage devices immediately */
-	scsi_scan(false);
+	err = scsi_scan(false);
+	if (err)
+		return err;
+
 	bd = blk_get_devnum_by_uclass_id(UCLASS_SCSI, devnum);
 	if (!bd)
 		return -ENODEV;
