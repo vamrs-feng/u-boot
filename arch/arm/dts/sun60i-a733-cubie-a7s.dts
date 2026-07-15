@@ -58,11 +58,13 @@
 };
 
 &mmc0 {
+	bootph-all;
 	bus-width = <4>;
 	status = "okay";
 };
 
 &mmc2 {
+	bootph-all;
 	bus-width = <8>;
 	cap-mmc-hw-reset;
 	mmc-ddr-1_8v;
@@ -257,6 +259,7 @@
 };
 
 &ufs {
+	bootph-all;
 	status = "okay";
 };
 

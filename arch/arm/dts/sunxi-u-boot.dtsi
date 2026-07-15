@@ -36,7 +36,11 @@
 			 * This value matches SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR
 			 * and SYS_SPI_U_BOOT_OFFS if those are defined.
 			 */
+#ifdef CONFIG_MACH_SUN60I_A733
+			min-size = <0x4a000>;
+#else
 			min-size = <0x8000>;
+#endif
 			filename = "spl/sunxi-spl.bin";
 		};
 
