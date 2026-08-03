@@ -565,6 +565,14 @@ static void sunxi_spl_store_dram_size(phys_addr_t dram_size)
 	spl->dram_size = dram_size >> 20;
 }
 
+#ifdef CONFIG_MACH_SUN60I_A733
+static void sunxi_set_gpio_withstand_voltage_auto(void)
+{
+	writel(0x01155550, SUNXI_PIO_BASE + SUN60I_A733_GPIO_POW_MODE_REG);
+	printf("board gpio withstand voltage auto mode\n");
+}
+#endif
+
 static void status_led_init(void)
 {
 #if CONFIG_IS_ENABLED(SUNXI_LED_STATUS)
@@ -579,6 +587,11 @@ static void status_led_init(void)
 void sunxi_board_init(void)
 {
 	int power_failed = 0;
+
+#ifdef CONFIG_MACH_SUN60I_A733
+	if (sunxi_get_soc_ver() == SUNXI_SOC_VER_B)
+		sunxi_set_gpio_withstand_voltage_auto();
+#endif
 
 	if (CONFIG_IS_ENABLED(SUNXI_LED_STATUS))
 		status_led_init();

@@ -46,6 +46,11 @@
 
 #ifdef CONFIG_MACH_SUN60I_A733
 #define SUNXI_GIC600_BASE		0x03400000
+
+/* The A733 SoC version is encoded in the system control register. */
+#define SUNXI_SYSCTRL_BASE		0x03000000
+#define SUNXI_SOC_VER_REG		(SUNXI_SYSCTRL_BASE + 0x24)
+#define SUNXI_SOC_VER_MASK		0x7
 #endif
 
 #define SUNXI_MMC0_BASE			0x04020000

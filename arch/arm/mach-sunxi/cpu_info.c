@@ -178,6 +178,20 @@ int sunxi_get_sid(unsigned int *sid)
 #endif
 }
 
+enum sunxi_soc_ver sunxi_get_soc_ver(void)
+{
+#ifdef SUNXI_SOC_VER_REG
+	uint32_t value;
+
+	value = readl(SUNXI_SOC_VER_REG);
+	value &= SUNXI_SOC_VER_MASK;
+
+	return SUNXI_SOC_VER_A + value;
+#else
+	return SUNXI_SOC_VER_INVALID;
+#endif
+}
+
 int sunxi_get_serial(unsigned int *serial)
 {
 	unsigned int chipid[4];
