@@ -22,6 +22,7 @@
 #define SOCID_H5	0x1718
 #define SOCID_R40	0x1701
 
+#ifndef __ASSEMBLY__
 enum sunxi_soc_ver {
 	SUNXI_SOC_VER_INVALID = -1,
 	SUNXI_SOC_VER_A = 0,
@@ -30,5 +31,6 @@ enum sunxi_soc_ver {
 };
 
 enum sunxi_soc_ver sunxi_get_soc_ver(void);
+#endif /* __ASSEMBLY__ */
 
 #endif /* _SUNXI_CPU_H */
