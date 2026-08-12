@@ -37,6 +37,16 @@ static const struct hw_info_def hw_info[] = {
 		.hw_id_lower_bound = 1265,
 		.hw_id_upper_bound = 1365, //1315mv +/- 50mv
 	},
+	{
+		.compatible = "allwinner,sun60i-a733",
+		.fdtfile = "allwinner/sun60i-a733-cm-a7-rpi-cm5-io.dtb",
+		.pcie_power_gpio = "PD20",
+		.pcie_wake_gpio = "PD21",
+		.pcie_reset_gpio = "PD22",
+		.hw_id_level = 1,
+		.hw_id_lower_bound = 1000,
+		.hw_id_upper_bound = 1100, //1050mv +/- 50mv
+	}
 };
 
 void radxa_set_board_type(void)
