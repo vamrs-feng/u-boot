@@ -1,4 +1,5 @@
 #include <env.h>
+#include <errno.h>
 #include <sunxi_gpio.h>
 #include <asm-generic/gpio.h>
 #include <sunxi_gpadc.h>
@@ -13,6 +14,8 @@ static const struct hw_info_def hw_info[] = {
 		.pcie_power_gpio = "PD20",
 		.pcie_wake_gpio = "PD21",
 		.pcie_reset_gpio = "PD22",
+		.boot_led_gpio = SUNXI_GPM(2),
+		.boot_led_on_value = 1,
 		.hw_id_level = 1,
 		.hw_id_lower_bound = 1750,
 		.hw_id_upper_bound = 1850, //1800mv +/- 50mv
@@ -23,6 +26,8 @@ static const struct hw_info_def hw_info[] = {
 		.pcie_power_gpio = "PE11",
 		.pcie_wake_gpio = "PE12",
 		.pcie_reset_gpio = "PE13",
+		.boot_led_gpio = SUNXI_GPJ(26),
+		.boot_led_on_value = 0,
 		.hw_id_level = 1,
 		.hw_id_lower_bound = 1519,
 		.hw_id_upper_bound = 1619, //1569mv +/- 50mv
@@ -33,6 +38,8 @@ static const struct hw_info_def hw_info[] = {
 		.pcie_power_gpio = "PD20",
 		.pcie_wake_gpio = "PD21",
 		.pcie_reset_gpio = "PD22",
+		.boot_led_gpio = SUNXI_GPM(2),
+		.boot_led_on_value = 1,
 		.hw_id_level = 1,
 		.hw_id_lower_bound = 1265,
 		.hw_id_upper_bound = 1365, //1315mv +/- 50mv
@@ -43,21 +50,25 @@ static const struct hw_info_def hw_info[] = {
 		.pcie_power_gpio = "PD20",
 		.pcie_wake_gpio = "PD21",
 		.pcie_reset_gpio = "PD22",
+		.boot_led_gpio = -1,
+		.boot_led_on_value = 0,
 		.hw_id_level = 1,
 		.hw_id_lower_bound = 1000,
 		.hw_id_upper_bound = 1100, //1050mv +/- 50mv
 	}
 };
 
-void radxa_set_board_type(void)
+int radxa_set_board_type(void)
 {
-	int i, vol, level;
+	int i, ret, vol, level;
 
 	sunxi_gpio_set_cfgpin(SUNXI_GPK(24), SUNXI_GPIO_INPUT);
 
-	if (gpio_request(HW_ID_GPIO, "hw_id_level") != 0) {
-		debug("Failed to request GPIO %d for hardware ID detection\n", HW_ID_GPIO);
-		return;
+	ret = gpio_request(HW_ID_GPIO, "hw_id_level");
+	if (ret) {
+		debug("Failed to request GPIO %d for hardware ID detection: %d\n",
+		      HW_ID_GPIO, ret);
+		return ret;
 	}
 	gpio_direction_input(HW_ID_GPIO);
 	level = gpio_get_value(HW_ID_GPIO);
@@ -71,11 +82,35 @@ void radxa_set_board_type(void)
 			vol <= hw_info[i].hw_id_upper_bound &&
 			level == hw_info[i].hw_id_level) {
 			board_index = i;
-			return;
+			return 0;
 		}
 	}
 	printf("No compatible board type found for vol=%d, level=%d\n", vol, level);
-	return;
+	return -ENODEV;
+}
+
+void radxa_enable_boot_led(void)
+{
+	const struct hw_info_def *info = &hw_info[board_index];
+	int ret;
+
+	if (info->boot_led_gpio < 0)
+		return;
+
+	ret = gpio_request(info->boot_led_gpio, "boot_led");
+	if (ret) {
+		printf("Failed to request boot LED GPIO %d: %d\n",
+		       info->boot_led_gpio, ret);
+		return;
+	}
+
+	ret = gpio_direction_output(info->boot_led_gpio,
+				    info->boot_led_on_value);
+	if (ret)
+		printf("Failed to enable boot LED GPIO %d: %d\n",
+		       info->boot_led_gpio, ret);
+
+	gpio_free(info->boot_led_gpio);
 }
 
 void radxa_set_compat_fdt(void)

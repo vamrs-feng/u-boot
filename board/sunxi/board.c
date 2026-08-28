@@ -51,12 +51,11 @@
 #include <sy8106a.h>
 #include <asm/setup.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 #ifdef CONFIG_RADXA_UNIFIED_IMAGE
-extern void radxa_set_board_type(void);
-extern void radxa_set_compat_fdt(void);
+#include "cubie_board.h"
 #endif
+
+DECLARE_GLOBAL_DATA_PTR;
 
 void i2c_init_board(void)
 {
@@ -891,8 +890,10 @@ int board_late_init(void)
 #endif
 
 #ifdef CONFIG_RADXA_UNIFIED_IMAGE
-	radxa_set_board_type();
-	radxa_set_compat_fdt();
+	if (!radxa_set_board_type()) {
+		radxa_enable_boot_led();
+		radxa_set_compat_fdt();
+	}
 #endif
 	return 0;
 }

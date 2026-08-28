@@ -13,11 +13,14 @@ struct hw_info_def {
 	const char* pcie_power_gpio;
 	const char* pcie_wake_gpio;
 	const char* pcie_reset_gpio;
+	int boot_led_gpio;
+	int boot_led_on_value;
 	unsigned int hw_id_level;
 	unsigned int hw_id_lower_bound;
 	unsigned int hw_id_upper_bound;
 };
 
-void radxa_set_board_type(void);
+int radxa_set_board_type(void);
+void radxa_enable_boot_led(void);
 void radxa_set_compat_fdt(void);
 struct hw_info_def radxa_get_hw_info(void);
