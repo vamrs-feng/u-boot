@@ -633,6 +633,13 @@ static void sunxi_mmc_set_clkrst(void *ccm, int sdc_no)
 	writel(SUNXI_MMC_COMMON_CLK_GATE | SUNXI_MMC_COMMON_RESET,
 	       SUNXI_MMC_COMMON_BASE + 4 * sdc_no);
 #endif
+#elif defined(CONFIG_MACH_SUN60I_A733)
+	setbits_le32(ccm + CCU_MMC_GATE_RESET(sdc_no), BIT(16) | BIT(0));
+#elif defined(CONFIG_MACH_SUN55I_A523)
+	setbits_le32(ccm + CCU_H6_MMC_GATE_RESET,
+		     (BIT(16) | BIT(0)) << sdc_no);
+	setbits_le32(ccm + CCU_A523_MMC_ASSOC_GATE,
+		     (BIT(17) | BIT(5)) << sdc_no);
 #elif  #defined(CONFIG_SUN50I_GEN_H6)
 	setbits_le32(ccm + CCU_H6_MMC_GATE_RESET, (BITR(16) | BIT(0)) << sdc_no);
 #else

@@ -36,6 +36,9 @@
 #define CCU_H6_UART_GATE_RESET		0x90c
 #define CCU_H6_I2C_GATE_RESET		0x91c
 
+/* A523 CCU register offsets */
+#define CCU_A523_MMC_ASSOC_GATE		0xe04
+
 /* A733 CCU register offsets */
 #define CCU_A733_PLL6_CFG		0x0a0
 #define CCU_A733_APB_UART_CLK_CFG	0x538
