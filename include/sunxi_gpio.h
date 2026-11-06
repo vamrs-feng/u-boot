@@ -212,6 +212,7 @@ struct sunxi_gpio_plat {
 /* prototypes for the non-DM GPIO/pinctrl functions, used in the SPL */
 void sunxi_gpio_set_cfgbank(void *bank_base, int pin_offset, u32 val);
 void sunxi_gpio_set_cfgpin(u32 pin, u32 val);
+void sunxi_gpio_set_value(u32 pin, bool set);
 int sunxi_gpio_get_cfgbank(void *bank_base, int pin_offset);
 int sunxi_gpio_get_cfgpin(u32 pin);
 void sunxi_gpio_set_drv(u32 pin, u32 val);

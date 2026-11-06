@@ -129,6 +129,14 @@ static void sunxi_gpio_set_value_bank(void *bank_base, int pin, bool set)
 			set ? 0 : mask, set ? mask : 0);
 }
 
+void sunxi_gpio_set_value(u32 pin, bool set)
+{
+	u32 bank = GPIO_BANK(pin);
+	void *pio = BANK_TO_GPIO(bank);
+
+	sunxi_gpio_set_value_bank(pio, GPIO_NUM(pin), set);
+}
+
 static int sunxi_gpio_get_value_bank(void *bank_base, int pin)
 {
 	return !!(readl(bank_base + GPIO_DAT_REG_OFFSET) & (1U << pin));
@@ -171,14 +179,6 @@ void sunxi_gpio_set_pull_bank(void *bank_base, int pin_offset, u32 val)
 /* =========== Non-DM code, used by the SPL. ============ */
 
 #if !CONFIG_IS_ENABLED(DM_GPIO)
-static void sunxi_gpio_set_value(u32 pin, bool set)
-{
-	u32 bank = GPIO_BANK(pin);
-	void *pio = BANK_TO_GPIO(bank);
-
-	sunxi_gpio_set_value_bank(pio, GPIO_NUM(pin), set);
-}
-
 static int sunxi_gpio_get_value(u32 pin)
 {
 	u32 bank = GPIO_BANK(pin);
