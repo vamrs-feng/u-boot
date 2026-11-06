@@ -576,10 +576,11 @@ static void status_led_init(void)
 {
 #if CONFIG_IS_ENABLED(SUNXI_LED_STATUS)
 	unsigned int state = IS_ENABLED(CONFIG_SPL_SUNXI_LED_STATUS_ACTIVE_HIGH);
-	unsigned int gpio = CONFIG_SPL_SUNXI_LED_STATUS_GPIO;
+	unsigned int pin = CONFIG_SPL_SUNXI_LED_STATUS_GPIO;
 
-	gpio_request(gpio, "gpio_led");
-	gpio_direction_output(gpio, state);
+	/* This physical pin is used before driver model is initialized. */
+	sunxi_gpio_set_cfgpin(pin, SUNXI_GPIO_OUTPUT);
+	sunxi_gpio_set_value(pin, state);
 #endif
 }
 
